@@ -810,6 +810,11 @@ var FILES = [
             if(a.length) s+="**Always sounds:**\n"+a.map(function(x){return "- "+t(x);}).join("\n");
             if(n.length) s+=(s?"\n\n":"")+"**Never sounds:**\n"+n.map(function(x){return "- "+t(x);}).join("\n");
             return s; } },
+        { id:"Q56", n:"Q56", label:"What are your brand's tone attributes?", type:"repeat", max:6,
+          fields:[{key:"attribute",label:"Tone attribute",ph:"e.g. Knowledgeable"},{key:"desc",label:"What it means",opt:true}],
+          help:"Name the defining tone attributes and what each means in practice. Example: Approachable, Knowledgeable, Personal.",
+          req:R.rec(),
+          out:function(v){ var es=filled(v,"attribute"); if(!es.length) return ""; return "<tone_attributes>\n"+es.map(function(e){ var s="  <attribute>\n    <name>"+t(e.attribute)+"</name>"; if(has(e.desc)) s+="\n    <description>"+t(e.desc)+"</description>"; return s+"\n  </attribute>"; }).join("\n")+"\n</tone_attributes>"; } },
         { id:"Q11", n:"Q11", label:"Give us an example of copy written in your brand voice that you consider a gold standard.", type:"textarea", size:"lg",
           help:"Paste copy you consider on-brand, from your website, a past campaign, or written now. The AI uses it as a target to match.",
           req:R.rec(),
@@ -819,6 +824,18 @@ var FILES = [
           help:"Provide a concrete off-brand example and the reason it is wrong. This defines what the AI should avoid.",
           req:R.rec(),
           out:function(v){ var e=(v&&v[0])||{}; return has(e.example) ? "<voice_example_bad>\n"+t(e.example)+"\n\nWhy this is wrong: "+t(e.why)+"\n</voice_example_bad>" : ""; } }
+      ]},
+      { name:"Writing Principles", tag:"writing_principles", questions:[
+        { id:"Q57", n:"Q57", label:"What are your core writing principles?", type:"repeat", max:10,
+          fields:[{key:"principle",label:"Writing principle"},{key:"note",label:"Note",opt:true}],
+          help:"The craft rules for how the brand writes: sentence structure, point of view, specificity, clarity. Example: Prioritise clarity over flourish.",
+          req:R.rec(),
+          out:function(v){ var b=filled(v,"principle").map(function(e){return bulletPair(e.principle,e.note);}); return b.length ? "**Writing principles:**\n"+b.join("\n") : ""; } },
+        { id:"Q58", n:"Q58", label:"How should the brand write about specific or sensitive topics?", type:"repeat", max:8,
+          fields:[{key:"topic",label:"Topic"},{key:"guidance",label:"How to write about it"}],
+          help:"For recurring or sensitive topics, give specific guidance. Example topics: how you write about price, emotion, or your core product.",
+          req:R.rec(),
+          out:function(v){ var es=filled(v,"topic"); if(!es.length) return ""; return "<writing_about_topics>\n"+es.map(function(e){ var s="  <topic>\n    <subject>"+t(e.topic)+"</subject>"; if(has(e.guidance)) s+="\n    <guidance>"+t(e.guidance)+"</guidance>"; return s+"\n  </topic>"; }).join("\n")+"\n</writing_about_topics>"; } }
       ]},
       { name:"Reasons to Believe", tag:"reasons_to_believe", questions:[
         { id:"Q38", n:"Q38", label:"What are your reasons to believe? List the proof and credentials that make your brand promise credible.", type:"repeat", max:8,
@@ -914,7 +931,7 @@ var FILES = [
 
   {
     id:"keyword-map", file:"keyword-map", title:"Keyword and Prompt Map", wrapper:"keyword_and_prompt_map",
-    desc:"The prompts, questions, and search terms the brand needs to own in AI-assisted search (GEO).",
+    desc:"The prompts, questions, and topics the brand needs to own in AI-assisted search (GEO).",
     sections:[
       { name:"Prompt Strategy", tag:"prompt_strategy", questions:[
         { id:"Q53", n:"Q53", label:"What is your strategic GEO goal?", type:"textarea", size:"md",
@@ -926,19 +943,9 @@ var FILES = [
           fields:[{key:"category",label:"Prompt category"},{key:"prompts",label:"Example prompts and questions customers ask",ta:true}],
           help:"The real questions customers ask AI, grouped by category. These become the content your brand must answer well.",
           req:R.rec(),
-          out:function(v){ var es=(v||[]).filter(function(e){return has(e.prompts);}); if(!es.length) return ""; return "<prompt_categories>\n"+es.map(function(e){ return "  <category>\n    <name>"+t(e.category)+"</name>\n    <prompts>"+t(e.prompts)+"</prompts>\n  </category>"; }).join("\n")+"\n</prompt_categories>"; } },
-        { id:"Q55", n:"Q55", label:"What must every GEO or support article cover?", type:"repeat", max:10,
-          fields:[{key:"item",label:"Mandatory coverage point"}],
-          help:"Non-negotiable elements every prompt-aligned article must include, so coverage stays consistent.",
-          req:R.rec(),
-          out:function(v){ var b=filled(v,"item").map(function(e){return "- "+t(e.item);}); return b.length ? "**Mandatory prompt coverage:**\n"+b.join("\n") : ""; } }
+          out:function(v){ var es=(v||[]).filter(function(e){return has(e.prompts);}); if(!es.length) return ""; return "<prompt_categories>\n"+es.map(function(e){ return "  <category>\n    <name>"+t(e.category)+"</name>\n    <prompts>"+t(e.prompts)+"</prompts>\n  </category>"; }).join("\n")+"\n</prompt_categories>"; } }
       ]},
-      { name:"Search Terms and Exclusions", tag:"search_terms", questions:[
-        { id:"Q29", n:"Q29", label:"What specific search terms or question formats do you want to be found for?", type:"repeat", max:20,
-          fields:[{key:"term",label:"Term or question"},{key:"form",label:"Form",toggle:["Short-form","Long-form"]}],
-          help:"Include both short keywords (\"private jet expedition\") and longer natural-language queries. Both affect search and AI visibility.",
-          req:R.min(5,"term"),
-          out:function(v){ var es=filled(v,"term"); if(!es.length) return ""; var sh=es.filter(function(e){return (e.form||"Short-form")==="Short-form";}); var lo=es.filter(function(e){return e.form==="Long-form";}); var s="<target_search_terms>"; if(sh.length) s+="\n  <short_form>\n"+sh.map(function(e){return "    <term>"+t(e.term)+"</term>";}).join("\n")+"\n  </short_form>"; if(lo.length) s+="\n  <long_form>\n"+lo.map(function(e){return "    <query>"+t(e.term)+"</query>";}).join("\n")+"\n  </long_form>"; return s+"\n</target_search_terms>"; } },
+      { name:"Exclusions and Markets", tag:"exclusions_and_markets", questions:[
         { id:"Q30", n:"Q30", label:"Are there topics, terms, or associations you do not want to be found for?", type:"repeat", max:10,
           fields:[{key:"term",label:"Topic or term"},{key:"reason",label:"Reason"}],
           help:"Competitor terms you do not want to trigger, price brackets you do not occupy, and categories that attract the wrong audience.",
