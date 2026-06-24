@@ -1,0 +1,1284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Brand Brain Builder</title>
+<!--
+  Brand Brain Builder — a single, self-contained, offline HTML app.
+  No build step, no framework, no network requests. Open in any browser.
+  Walks through a brand questionnaire and exports a "Brand Brain":
+  five markdown files with semantic XML tags for LLM readability.
+
+  Architecture:
+    1. CSS  — all styling lives in the <style> block below. It is isolated
+              from logic so the visual layer can be swapped wholesale.
+    2. FILES — a data-driven config of all 37 questions across 5 files. Each
+              question declares its UI type, requirement rule, and an out()
+              function that compiles its answer into spec-exact markdown/XML.
+    3. Engine — generic input renderers, derived-state updates, persistence
+              to localStorage, output assembly, a tiny native ZIP writer, and
+              the Master Context Block.
+-->
+<style>
+/* ============================================================ *
+ * Design tokens
+ * ------------------------------------------------------------ *
+ * Editorial "strategy dossier" direction: warm paper, ink type,
+ * a confident indigo for intelligence/decisions, and a mono
+ * utility face for the file index + the machine-readable output.
+ * ============================================================ */
+:root{
+  --paper:#FBFAF6;
+  --surface:#FFFFFF;
+  --surface-2:#F5F2EA;
+  --ink:#191922;
+  --ink-soft:#43434f;
+  --muted:#7c7c88;
+  --faint:#a6a6af;
+  --line:#E7E2D6;
+  --line-strong:#D6CFBF;
+  --accent:#4338CA;
+  --accent-hover:#36309e;
+  --accent-soft:#ECEBFB;
+  --accent-ink:#2c2870;
+  --ok:#15803D;
+  --ok-soft:#E6F1E9;
+  --warn:#9a5b06;
+  --warn-soft:#F6EBDB;
+  --danger:#9f2d2d;
+  --danger-soft:#F6E6E4;
+  --radius:11px;
+  --radius-sm:8px;
+  --shadow:0 1px 2px rgba(25,25,34,.04), 0 8px 24px -16px rgba(25,25,34,.18);
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji",sans-serif;
+  --serif:Georgia,"Iowan Old Style","Times New Roman",serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent)}
+button{font-family:inherit}
+::selection{background:var(--accent-soft);color:var(--accent-ink)}
+
+/* ---- Layout shell ---- */
+.app{min-height:100vh;display:flex;flex-direction:column}
+header.top{
+  position:sticky;top:0;z-index:30;
+  background:rgba(251,250,246,.88);
+  backdrop-filter:saturate(140%) blur(8px);
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:16px;
+  padding:14px 26px;
+}
+.brand-lockup{display:flex;align-items:baseline;gap:10px;min-width:0}
+.brand-mark{
+  font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+  color:#fff;background:var(--ink);border-radius:6px;padding:5px 8px;line-height:1;
+}
+.brand-title{font-family:var(--serif);font-size:19px;font-weight:600;letter-spacing:.01em}
+.brand-sub{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-actions{margin-left:auto;display:flex;align-items:center;gap:10px}
+.saved-pill{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.04em;display:flex;align-items:center;gap:6px}
+.saved-dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+
+.shell{flex:1;display:flex;align-items:flex-start;max-width:1180px;width:100%;margin:0 auto;padding:28px 26px 80px;gap:34px}
+
+/* ---- Left index / file nav (the signature element) ---- */
+nav.index{width:264px;flex:none;position:sticky;top:88px}
+.progress-head{margin-bottom:14px}
+.progress-count{font-family:var(--serif);font-size:15px;font-weight:600}
+.progress-track{height:5px;border-radius:99px;background:var(--line);margin-top:9px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);width:0;transition:width .35s ease}
+.index-eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin:18px 2px 8px}
+ul.files{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.file-item{
+  display:flex;align-items:center;gap:12px;width:100%;
+  border:1px solid transparent;border-radius:var(--radius-sm);
+  padding:10px 11px;cursor:pointer;text-align:left;background:none;color:var(--ink);
+  transition:background .12s,border-color .12s;
+}
+.file-item:hover{background:var(--surface-2)}
+.file-item.active{background:var(--surface);border-color:var(--line-strong);box-shadow:var(--shadow)}
+.file-num{font-family:var(--mono);font-size:12px;color:var(--faint);width:20px;flex:none}
+.file-item.active .file-num{color:var(--accent)}
+.file-meta{min-width:0;flex:1}
+.file-name{font-size:13.5px;font-weight:600;line-height:1.25}
+.file-tag{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.file-check{width:18px;height:18px;flex:none;border-radius:50%;border:1.5px solid var(--line-strong);display:grid;place-items:center;color:transparent;font-size:11px}
+.file-item.done .file-check{background:var(--ok);border-color:var(--ok);color:#fff}
+.file-item.last .file-num{color:var(--danger)}
+.file-item.last.done .file-check{background:var(--danger);border-color:var(--danger)}
+.file-item.locked{opacity:.55;cursor:not-allowed}
+.file-item.locked:hover{background:none}
+.lock-badge{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line-strong);border-radius:5px;padding:2px 5px}
+.index-foot{margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
+.linkbtn{background:none;border:none;color:var(--muted);font-size:12.5px;cursor:pointer;padding:4px 0;text-decoration:underline;text-underline-offset:2px}
+.linkbtn:hover{color:var(--danger)}
+
+/* ---- Main content ---- */
+main.content{flex:1;min-width:0;max-width:720px}
+.file-head{margin-bottom:6px}
+.file-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.file-head h1{font-family:var(--serif);font-size:30px;font-weight:600;letter-spacing:-.01em;margin:8px 0 6px}
+.file-desc{color:var(--ink-soft);font-size:15px;max-width:60ch}
+.intro-note{
+  background:var(--surface-2);border:1px solid var(--line-strong);border-left:3px solid var(--accent);
+  border-radius:var(--radius-sm);padding:14px 16px;margin:20px 0 4px;color:var(--ink-soft);font-size:14px;
+}
+.intro-note p{margin:0 0 8px}.intro-note p:last-child{margin:0}
+
+.section-block{margin-top:34px}
+.section-head{display:flex;align-items:baseline;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.section-name{font-family:var(--serif);font-size:18px;font-weight:600}
+.section-tag{font-family:var(--mono);font-size:11px;color:var(--faint)}
+
+/* ---- Question card ---- */
+.q{margin-bottom:24px}
+.q-label{font-size:15.5px;font-weight:600;line-height:1.4;display:block}
+.q-id{font-family:var(--mono);font-size:11px;color:var(--faint);margin-right:7px}
+.q-req{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;padding:2px 7px;border-radius:99px;margin-left:8px;white-space:nowrap;vertical-align:middle}
+.req-need{background:var(--warn-soft);color:var(--warn)}
+.req-ok{background:var(--ok-soft);color:var(--ok)}
+.req-opt{background:var(--surface-2);color:var(--muted)}
+.q-help{color:var(--muted);font-size:13.5px;margin:6px 0 12px;max-width:62ch}
+.q-body{}
+
+input[type=text],input[type=url],textarea,select{
+  width:100%;font-family:inherit;font-size:14.5px;color:var(--ink);
+  background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--radius-sm);
+  padding:10px 12px;transition:border-color .12s,box-shadow .12s;
+}
+textarea{resize:vertical;line-height:1.5}
+.ta-sm{min-height:62px}.ta-md{min-height:96px}.ta-lg{min-height:160px}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+input::placeholder,textarea::placeholder{color:var(--faint)}
+.field-label{font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;display:block}
+.field-label .opt{font-weight:400;color:var(--faint)}
+.field{margin-bottom:10px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:560px){.grid-2{grid-template-columns:1fr}}
+
+/* repeating entries */
+.entry{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px}
+.entry-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.entry-num{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.entry.invalid{border-color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn-soft)}
+.entry-flag{font-family:var(--mono);font-size:10.5px;color:var(--warn)}
+.remove-x{background:none;border:none;color:var(--faint);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:6px}
+.remove-x:hover{color:var(--danger);background:var(--danger-soft)}
+.add-btn{
+  display:inline-flex;align-items:center;gap:7px;background:var(--surface);color:var(--accent-ink);
+  border:1px dashed var(--line-strong);border-radius:var(--radius-sm);padding:9px 14px;font-size:13.5px;
+  font-weight:600;cursor:pointer;transition:border-color .12s,background .12s;
+}
+.add-btn:hover{border-color:var(--accent);background:var(--accent-soft)}
+.add-btn:disabled{opacity:.45;cursor:not-allowed}
+.add-btn .plus{font-size:16px;line-height:1}
+.cap-note{font-family:var(--mono);font-size:11px;color:var(--faint);margin-left:10px}
+
+/* two column always/never */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:560px){.twocol{grid-template-columns:1fr}}
+.col-head{font-size:12.5px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.col-head .tick{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.row-line{display:flex;gap:6px;margin-bottom:7px}
+.row-line input{flex:1}
+
+/* fixed table (tone by context) */
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:0 8px 8px}
+.tbl td{padding:5px 8px 5px 0;vertical-align:top}
+.tbl td.ctx{font-weight:600;color:var(--ink-soft);width:34%;padding-top:14px}
+.tbl input{font-size:13.5px;padding:8px 10px}
+@media(max-width:560px){.tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:100%}.tbl thead{display:none}.tbl td.ctx{padding:8px 0 4px}.tbl tr{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}}
+
+/* toggle + segmented */
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface)}
+.seg button{border:none;background:none;padding:7px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+.seg.mini button{padding:5px 11px;font-size:12px}
+.toggle-reveal{margin-top:12px}
+
+/* AI prompt nudge (Q37) */
+.nudge{margin-top:12px;background:var(--accent-soft);border-radius:var(--radius-sm);padding:11px 14px;color:var(--accent-ink);font-size:13.5px;font-style:italic}
+
+/* locked V2 panel */
+.locked-panel{background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--radius);padding:32px;color:var(--ink-soft)}
+.locked-panel h2{font-family:var(--serif);font-size:22px;margin:0 0 14px}
+.locked-panel blockquote{margin:0;border-left:3px solid var(--line-strong);padding-left:16px;color:var(--ink-soft)}
+
+/* footer nav within main */
+.file-foot{display:flex;align-items:center;justify-content:space-between;margin-top:40px;padding-top:20px;border-top:1px solid var(--line)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:var(--radius-sm);padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:background .12s,border-color .12s,opacity .12s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-ghost{background:var(--surface);color:var(--ink);border-color:var(--line-strong)}
+.btn-ghost:hover{border-color:var(--ink-soft)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-sm{padding:6px 12px;font-size:13px}
+
+/* ---- Slide-over panels / modal ---- */
+.scrim{position:fixed;inset:0;background:rgba(25,25,34,.34);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.open{opacity:1;pointer-events:auto}
+.panel{position:fixed;top:0;right:0;height:100%;width:min(560px,94vw);background:var(--paper);z-index:60;box-shadow:-12px 0 40px -24px rgba(0,0,0,.4);transform:translateX(100%);transition:transform .26s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+.panel.open{transform:translateX(0)}
+.panel-head{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--line)}
+.panel-head h2{font-family:var(--serif);font-size:19px;margin:0;flex:1}
+.panel-body{overflow:auto;padding:22px;flex:1}
+.panel-foot{padding:16px 22px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center}
+.icon-btn{background:none;border:none;font-size:22px;line-height:1;color:var(--muted);cursor:pointer;padding:4px 8px;border-radius:6px}
+.icon-btn:hover{background:var(--surface-2);color:var(--ink)}
+
+.mcb-note{color:var(--muted);font-size:13px;margin-bottom:14px}
+pre.mono-box{font-family:var(--mono);font-size:12.5px;line-height:1.6;white-space:pre-wrap;word-break:break-word;background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--radius-sm);padding:16px;color:var(--ink)}
+.mcb-empty{color:var(--muted);font-size:14px;background:var(--surface-2);border-radius:var(--radius-sm);padding:18px;border:1px dashed var(--line-strong)}
+
+/* export list */
+.exp-row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:9px}
+.exp-meta{flex:1;min-width:0}
+.exp-name{font-family:var(--mono);font-size:12.5px;font-weight:600}
+.exp-state{font-size:12px;color:var(--muted)}
+.exp-state.ready{color:var(--ok)}
+.exp-actions{display:flex;gap:6px}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:99px;font-size:13.5px;z-index:80;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:880px){
+  .shell{flex-direction:column;gap:22px}
+  nav.index{position:static;width:100%}
+  ul.files{flex-direction:row;flex-wrap:wrap}
+  .file-item{flex:1 1 150px}
+  main.content{max-width:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand-lockup">
+      <span class="brand-mark">BB</span>
+      <span class="brand-title">Brand Brain</span>
+      <span class="brand-sub">Build a portable, AI-ready brand context</span>
+    </div>
+    <div class="top-actions">
+      <span class="saved-pill" id="savedPill" hidden><span class="saved-dot"></span><span>Saved</span></span>
+      <button class="btn btn-ghost btn-sm" id="openMaster" disabled title="Complete the core questions to unlock">Master Context</button>
+      <button class="btn btn-primary btn-sm" id="openExport">Export</button>
+    </div>
+  </header>
+
+  <div class="shell">
+    <nav class="index" aria-label="Files">
+      <div class="progress-head">
+        <div class="progress-count"><span id="progressNum">0</span> of 5 files complete</div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+      <div class="index-eyebrow">The five files</div>
+      <ul class="files" id="fileNav"></ul>
+      <div class="index-foot">
+        <button class="linkbtn" id="clearAll">Clear all answers</button>
+      </div>
+    </nav>
+
+    <main class="content" id="main"></main>
+  </div>
+</div>
+
+<!-- Master Context slide-over -->
+<div class="scrim" id="masterScrim"></div>
+<aside class="panel" id="masterPanel" aria-hidden="true">
+  <div class="panel-head">
+    <h2>Master Context Block</h2>
+    <button class="icon-btn" data-close="master" aria-label="Close">&times;</button>
+  </div>
+  <div class="panel-body">
+    <p class="mcb-note">Paste this as your system prompt or first message in any AI tool for immediate branded context. It updates live as you answer.</p>
+    <div id="mcbContent"></div>
+  </div>
+  <div class="panel-foot">
+    <button class="btn btn-primary" id="copyMaster">Copy to clipboard</button>
+    <span class="cap-note" id="mcbWords"></span>
+  </div>
+</aside>
+
+<!-- Export slide-over -->
+<div class="scrim" id="exportScrim"></div>
+<aside class="panel" id="exportPanel" aria-hidden="true">
+  <div class="panel-head">
+    <h2>Export your Brand Brain</h2>
+    <button class="icon-btn" data-close="export" aria-label="Close">&times;</button>
+  </div>
+  <div class="panel-body">
+    <p class="mcb-note">Five markdown files, each wrapped in semantic XML tags so an LLM can locate and apply specific context. Download them individually or all at once.</p>
+    <div id="exportList"></div>
+    <div style="margin-top:8px"><button class="btn btn-primary" id="downloadZip">Download all (.zip)</button></div>
+    <div class="index-eyebrow" style="margin-top:26px">Preview</div>
+    <pre class="mono-box" id="exportPreview" style="margin-top:8px"></pre>
+  </div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================ *
+ * Small text helpers
+ * ============================================================ */
+var t = function(s){ return (s==null?"":String(s)).trim(); };
+var has = function(s){ return t(s).length>0; };
+function slug(s){
+  return t(s).toLowerCase().replace(/['"]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || "brand";
+}
+// "- a — b" with the dash-clause omitted when b is empty
+function bulletPair(a,b){ return has(a) ? ("- "+t(a)+(has(b)?" — "+t(b):"")) : ""; }
+// Render an instruction as "Never X." without doubling a leading "never".
+function neverize(s){
+  var v=t(s); if(!v) return "";
+  v=v.replace(/[.]+$/,"");
+  if(/^never\b/i.test(v)) return v.charAt(0).toUpperCase()+v.slice(1)+".";
+  return "Never "+v.charAt(0).toLowerCase()+v.slice(1)+".";
+}
+
+/* ============================================================ *
+ * FILE + QUESTION CONFIG  (source of truth: brand-brain-questions.md)
+ *
+ * Question shape:
+ *   id, label, help, type, and type-specific keys (fields, options,
+ *   rows, size). `req` declares the completion rule. `out(val)`
+ *   compiles the answer into spec-exact markdown/XML (empty string
+ *   when nothing to emit).
+ *
+ * Value shapes by type:
+ *   text/textarea/select : string
+ *   dualtext             : {brand, website}
+ *   repeat               : [ {<fieldKey>: string, ...}, ... ]
+ *   twocol               : {always:[str], never:[str]}
+ *   tonetable            : [ {context, tone, phrase}, ... ]  (context fixed)
+ *   toggletext           : {enabled:bool, text:string}
+ * ============================================================ */
+
+// requirement constructors
+var R = {
+  yes:        function(){ return {kind:"yes"}; },
+  min:        function(n,key){ return {kind:"min",n:n,key:key}; },
+  minEach:    function(n){ return {kind:"minEach",n:n}; },
+  minRows:    function(n){ return {kind:"minRows",n:n}; },
+  complete:   function(n,keys){ return {kind:"complete",n:n,keys:keys}; }, // entries with ALL keys filled
+  rec:        function(){ return {kind:"rec"}; },
+  none:       function(){ return {kind:"none"}; }
+};
+
+// markdown table from header cols + array of row arrays
+function mdTable(cols, rows){
+  if(!rows.length) return "";
+  var out = "| "+cols.join(" | ")+" |\n|"+cols.map(function(){return "---";}).join("|")+"|\n";
+  out += rows.map(function(r){ return "| "+r.join(" | ")+" |"; }).join("\n");
+  return out;
+}
+// filter repeat entries that have content in `key`
+function filled(arr,key){ return (arr||[]).filter(function(e){ return has(e[key]); }); }
+
+var FILES = [
+  {
+    id:"brand-profile", file:"brand-profile", title:"Brand Profile", wrapper:"brand_profile",
+    desc:"Who you are, what you sell, why customers choose you, and what you are not. The foundation every other file references.",
+    sections:[
+      { name:"Company Overview", tag:"company_overview", questions:[
+        { id:"Q1", n:"Q1", label:"What is your brand name and website?", type:"dualtext",
+          fields:[{key:"brand",label:"Brand name",ph:"e.g. Northbound"},{key:"website",label:"Website URL",ph:"https://"}],
+          help:"These seed every output file header and the Master Context Block.",
+          req:R.yes(),
+          out:function(v){ v=v||{}; return "**Brand:** "+t(v.brand)+"\n**Website:** "+t(v.website); } },
+        { id:"Q2", n:"Q2", label:"Describe what you do in one or two sentences, as if explaining to someone at a dinner party who has never heard of you.", type:"textarea", size:"sm",
+          help:"Avoid jargon. This becomes the opening line inside every AI interaction. If you have to think about it, that's normal — it's harder than it sounds.",
+          req:R.yes(),
+          out:function(v){ return "**Elevator pitch:** "+t(v); } },
+        { id:"Q3", n:"Q3", label:"What specific problem do you solve for your customers?", type:"textarea", size:"sm",
+          help:"Think about the frustration, gap, or desire your product removes. Not features — the underlying problem your customer has before they find you.",
+          req:R.yes(),
+          out:function(v){ return "**Problem solved:** "+t(v); } }
+      ]},
+      { name:"Products and Services", tag:"products_and_services", questions:[
+        { id:"Q4", n:"Q4", label:"Describe your core product or service in plain terms. If you have more than one, list the top three.", type:"repeat", max:5,
+          fields:[{key:"name",label:"Product or service name"},{key:"desc",label:"One-sentence description"},{key:"benefit",label:"The single biggest benefit to the customer"}],
+          help:"Focus on what the customer gets, not how you deliver it.",
+          req:R.min(1,"name"),
+          out:function(v){ var rows=filled(v,"name").map(function(e){return [t(e.name),t(e.desc),t(e.benefit)];});
+            return mdTable(["Product/Service","Description","Key benefit"],rows); } }
+      ]},
+      { name:"Competitive Positioning", tag:"competitive_positioning", questions:[
+        { id:"Q5", n:"Q5", label:"Why do customers choose you over the alternatives?", type:"textarea", size:"md",
+          help:'Be specific. "Better service" is not an answer. What do you do that customers genuinely cannot easily get elsewhere?',
+          req:R.yes(),
+          out:function(v){ return "**Why customers choose us:** "+t(v); } },
+        { id:"Q6", n:"Q6", label:"What are your three to five strongest proof points?", type:"repeat", max:5,
+          fields:[{key:"point",label:"Proof point"},{key:"source",label:"Source or context",opt:true}],
+          help:"Facts that back up your positioning: years in business, customer numbers, awards, verified statistics, notable clients. If you don't have evidence for a claim, don't include it here.",
+          req:R.min(2,"point"),
+          out:function(v){ var b=filled(v,"point").map(function(e){return bulletPair(e.point,e.source);});
+            return b.length ? "**Proof points:**\n"+b.join("\n") : ""; } }
+      ]},
+      { name:"Competitors", tag:"competitors", questions:[
+        { id:"Q7", n:"Q7", label:"Who are your two or three main competitors?", type:"repeat", max:5,
+          fields:[{key:"name",label:"Competitor name"},{key:"strength",label:"Their main strength"},{key:"adv",label:"Your advantage against them"}],
+          help:"Be honest about their strengths. The Brain is more useful when it understands the real competitive landscape, not a flattering version of it.",
+          req:R.min(1,"name"),
+          out:function(v){ var rows=filled(v,"name").map(function(e){return [t(e.name),t(e.strength),t(e.adv)];});
+            return mdTable(["Competitor","Their strength","Our advantage"],rows); } }
+      ]},
+      { name:"What We Are Not", tag:"what_we_are_not", questions:[
+        { id:"Q8", n:"Q8", label:'Complete the sentence: "We are NOT…" Add up to five.', type:"repeat", max:5,
+          fields:[{key:"statement",label:"We are not…"},{key:"reason",label:"Why this matters to state",opt:true}],
+          help:'The misperceptions, the categories you don\'t want to be placed in, or the comparisons that frustrate you. E.g. "We are not a budget option." "We are not a tech company that happens to do travel."',
+          req:R.min(2,"statement"),
+          out:function(v){ var b=filled(v,"statement").map(function(e){return bulletPair(e.statement,e.reason);});
+            return b.length ? "**We are NOT:**\n"+b.join("\n") : ""; } }
+      ]}
+    ]
+  },
+
+  {
+    id:"style-guide", file:"style-guide", title:"Style Guide", wrapper:"style_guide",
+    desc:"How the brand sounds, what it says, and what it never says. Used by anyone writing copy or prompting AI to write copy.",
+    sections:[
+      { name:"Brand Voice", tag:"brand_voice", questions:[
+        { id:"Q9", n:"Q9", label:"Describe your brand voice in three to five words.", type:"text", ph:"e.g. Direct, warm, quietly confident",
+          help:'Think of adjectives you\'d use to describe a person with this voice. E.g. "Expert, grounded, never flashy."',
+          req:R.yes(),
+          out:function(v){ return "**Brand voice:** "+t(v); } },
+        { id:"Q10", n:"Q10", label:"What should your brand always sound like? And what should it never sound like?", type:"twocol",
+          colLabels:["Always sounds like","Never sounds like"],
+          help:"E.g. Always: specific and grounded. Never: salesy or breathless. Always: warm and inviting. Never: cold or corporate.",
+          req:R.minEach(3),
+          out:function(v){ v=v||{}; var a=(v.always||[]).filter(has), n=(v.never||[]).filter(has);
+            if(!a.length && !n.length) return "";
+            var s="";
+            if(a.length) s+="**Always sounds:**\n"+a.map(function(x){return "- "+t(x);}).join("\n");
+            if(n.length) s+=(s?"\n\n":"")+"**Never sounds:**\n"+n.map(function(x){return "- "+t(x);}).join("\n");
+            return s; } },
+        { id:"Q11", n:"Q11", label:"Give us an example of copy written in your brand voice that you consider a gold standard.", type:"textarea", size:"lg",
+          help:"From your website, a past campaign, or something you write now. It becomes the reference example inside the Brain — the AI will use it as a target to match.",
+          req:R.rec(),
+          out:function(v){ return has(v) ? "<voice_example_good>\n"+t(v)+"\n</voice_example_good>" : ""; } },
+        { id:"Q12", n:"Q12", label:"Give us an example of copy that sounds wrong for your brand, and explain briefly why.", type:"repeat", max:1, single:true,
+          fields:[{key:"example",label:"Example of wrong-sounding copy",ta:true},{key:"why",label:"Why it's wrong"}],
+          help:"This is as useful as the good example. It teaches the AI what to avoid specifically. The more concrete, the better.",
+          req:R.rec(),
+          out:function(v){ var e=(v&&v[0])||{}; return has(e.example) ? "<voice_example_bad>\n"+t(e.example)+"\n\nWhy this is wrong: "+t(e.why)+"\n</voice_example_bad>" : ""; } }
+      ]},
+      { name:"Terminology", tag:"terminology", questions:[
+        { id:"Q13", n:"Q13", label:"List the specific words and phrases your brand always uses.", type:"repeat", max:20,
+          fields:[{key:"term",label:"Use this term"},{key:"instead",label:"Instead of",opt:true}],
+          help:'Product names, category terms, preferred descriptions. E.g. "We always say expedition, not tour." Include the preferred term and, if useful, what it replaces.',
+          req:R.min(3,"term"),
+          out:function(v){ var rows=filled(v,"term").map(function(e){return [t(e.term),t(e.instead)];});
+            return rows.length ? "**Always use:**\n"+mdTable(["Use","Instead of"],rows) : ""; } },
+        { id:"Q14", n:"Q14", label:"List words and phrases your brand actively avoids.", type:"repeat", max:20,
+          fields:[{key:"avoid",label:"Avoid this term"},{key:"reason",label:"Reason",opt:true}],
+          help:"Overused industry words, competitor language, terms that feel off-brand. Add a reason for any that aren't obvious, so the AI understands the principle, not just the rule.",
+          req:R.min(3,"avoid"),
+          out:function(v){ var rows=filled(v,"avoid").map(function(e){return [t(e.avoid),t(e.reason)];});
+            return rows.length ? "**Never use:**\n"+mdTable(["Avoid","Reason"],rows) : ""; } }
+      ]},
+      { name:"Tone by Context", tag:"tone_by_context", questions:[
+        { id:"Q15", n:"Q15", label:"How does your tone shift depending on the situation? Fill in the ones that are relevant to your brand.", type:"tonetable",
+          rows:["Website homepage","Product or trip page","Email to existing customers","Paid advertising","Social media","Customer support","Press or thought leadership","Internal communications"],
+          help:"Tone can shift while voice stays consistent. E.g. social media might be warmer and shorter than a product page, but both should still sound like the same brand.",
+          req:R.minRows(2),
+          out:function(v){ var rows=(v||[]).filter(function(r){return has(r.tone)||has(r.phrase);})
+              .map(function(r){return [t(r.context),t(r.tone),t(r.phrase)];});
+            return mdTable(["Context","Desired tone","One example phrase"],rows); } }
+      ]},
+      { name:"Formatting Rules", tag:"formatting_rules", questions:[
+        { id:"Q16", n:"Q16", label:"Do you use UK English or US English?", type:"select",
+          options:["UK English","US English","Both, specify by market"],
+          req:R.yes(),
+          out:function(v){ return has(v) ? "**English variant:** "+t(v) : ""; } },
+        { id:"Q17", n:"Q17", label:"List any other formatting rules your AI outputs must follow consistently.", type:"repeat", max:10,
+          fields:[{key:"rule",label:"Rule"},{key:"notes",label:"Notes",opt:true}],
+          help:"Only rules that genuinely matter: capitalisation preferences, how you write numbers, Oxford comma usage, headline casing, brand name on first vs subsequent mentions.",
+          req:R.none(),
+          out:function(v){ var b=filled(v,"rule").map(function(e){return bulletPair(e.rule,e.notes);});
+            return b.length ? "**Formatting rules:**\n"+b.join("\n") : ""; } }
+      ]}
+    ]
+  },
+
+  {
+    id:"audience", file:"audience", title:"Audience", wrapper:"audience",
+    desc:"Who the brand is trying to reach and what they actually need. Written as operating instructions for AI, not a marketing persona card.",
+    sections:[
+      { name:"Core Audience", tag:"core_audience", questions:[
+        { id:"Q18", n:"Q18", label:"Describe your primary customer in plain terms.", type:"textarea", size:"md",
+          help:'Don\'t start with demographics. Start with who they are as a person: mindset, life stage, what they care about. E.g. "Curious, well-traveled professionals in their 50s and 60s who value time and access over novelty."',
+          req:R.yes(),
+          out:function(v){ return "**Who they are:** "+t(v); } },
+        { id:"Q19", n:"Q19", label:"What does your primary customer actually want when they come to you?", type:"textarea", size:"md",
+          help:"Not what you sell them — the outcome, feeling, or result they are looking for. What does success look like for them after working with you?",
+          req:R.yes(),
+          out:function(v){ return "**What they want:** "+t(v); } },
+        { id:"Q20", n:"Q20", label:"What motivates them to make a decision?", type:"textarea", size:"md",
+          help:"What tips them from considering to committing? A trigger event, social proof, a particular piece of information, a deadline? The more specific, the more useful.",
+          req:R.yes(),
+          out:function(v){ return "**What motivates decisions:** "+t(v); } },
+        { id:"Q21", n:"Q21", label:"What are their top three objections or hesitations before buying?", type:"repeat", max:5,
+          fields:[{key:"objection",label:"Objection or hesitation"}],
+          help:"What makes them pause? Price, trust, complexity, time? These need to be addressed directly in content. If your AI doesn't know what objections exist, it won't address them.",
+          req:R.min(2,"objection"),
+          out:function(v){ var b=filled(v,"objection").map(function(e){return "- "+t(e.objection);});
+            return b.length ? "**Key objections:**\n"+b.join("\n") : ""; } },
+        { id:"Q22", n:"Q22", label:"What does your customer read, watch, or listen to? Where do they go for information before making a decision like this?", type:"textarea", size:"md",
+          help:'This tells the AI how sophisticated and well-informed to assume the reader is. E.g. "They read the FT and Condé Nast Traveller…" This changes the tone and assumed knowledge level in every output.',
+          req:R.rec(),
+          out:function(v){ return has(v) ? "**Information sources and sophistication:** "+t(v) : ""; } },
+        { id:"Q23", n:"Q23", label:"What language does your customer use when they talk about this problem or this type of product?", type:"textarea", size:"md",
+          help:'The exact words they use in searches, reviews, conversations — not your internal language. E.g. "They say private jet trip, not private jet expedition." Bridging this gap is one of the highest-value things the Brain does.',
+          req:R.yes(),
+          out:function(v){ return "**Language they use:** "+t(v); } }
+      ]},
+      { name:"Audience Segments", tag:"audience_segments", questions:[
+        { id:"Q24", n:"Q24", label:"Are there distinct customer segments that need different treatment from your content? If yes, describe up to three.", type:"repeat", max:3,
+          fields:[{key:"name",label:"Segment name"},{key:"who",label:"Who they are"},{key:"need",label:"What they specifically need from content"}],
+          help:"E.g. first-time buyers vs returning customers, trade/B2B vs direct consumer, UK vs US. Only add a segment if the content or tone would genuinely differ.",
+          req:R.none(),
+          out:function(v){ var es=filled(v,"name");
+            if(!es.length) return "";
+            return "**Audience segments:**\n\n"+es.map(function(e){
+              return "**"+t(e.name)+"**\nWho they are: "+t(e.who)+"\nWhat they need from content: "+t(e.need);
+            }).join("\n\n"); } },
+        { id:"Q25", n:"Q25", label:"Who is your product not for?", type:"textarea", size:"md",
+          help:'As important as who it is for. E.g. "Not for budget travellers, not for people who want fully independent itineraries, not for first-time international travellers."',
+          req:R.rec(),
+          out:function(v){ return has(v) ? "**Not for:** "+t(v) : ""; } }
+      ]}
+    ]
+  },
+
+  {
+    id:"keyword-map", file:"keyword-map", title:"Keyword and Prompt Map", wrapper:"keyword_and_prompt_map",
+    desc:"The topics, questions, and search terms the brand needs to own — including natural-language prompt intent, which is how AI-assisted search actually works.",
+    sections:[
+      { name:"Core Topics and Intent", tag:"core_topics", questions:[
+        { id:"Q26", n:"Q26", label:"What are the five to ten most important topics your content needs to cover?", type:"repeat", max:10,
+          fields:[{key:"topic",label:"Topic"},{key:"reason",label:"Why it matters",opt:true}],
+          help:'Think about what someone would ask an AI assistant or search when seriously considering your product. Category terms, not brand terms. E.g. "luxury private jet expeditions," "all-inclusive expedition travel."',
+          req:R.min(5,"topic"),
+          out:function(v){ var b=filled(v,"topic").map(function(e){return bulletPair(e.topic,e.reason);});
+            return b.length ? "**Core topics:**\n"+b.join("\n") : ""; } },
+        { id:"Q27", n:"Q27", label:"What are the most common questions your customers ask before they buy?", type:"repeat", max:15,
+          fields:[{key:"question",label:"Question (write as a real question)"}],
+          help:'Think support emails, sales calls, FAQ pages, live chat. Write them as real questions, not topics. E.g. "What is included in the price?" not "pricing."',
+          req:R.min(5,"question"),
+          out:function(v){ var b=filled(v,"question").map(function(e){return "- "+t(e.question);});
+            return b.length ? "**Pre-purchase questions:**\n"+b.join("\n") : ""; } },
+        { id:"Q28", n:"Q28", label:"What questions do you wish customers would ask, because your answer would make you look great?", type:"repeat", max:10,
+          fields:[{key:"question",label:"Question"}],
+          help:'The comparison questions, the "why not just do it yourself" questions, the value-for-money questions. Often the questions that best differentiate you.',
+          req:R.min(2,"question"),
+          out:function(v){ var b=filled(v,"question").map(function(e){return "- "+t(e.question);});
+            return b.length ? "**Opportunity questions:**\n"+b.join("\n") : ""; } },
+        { id:"Q29", n:"Q29", label:"What specific search terms or question formats do you want to be found for?", type:"repeat", max:20,
+          fields:[{key:"term",label:"Term or question"},{key:"form",label:"Form",toggle:["Short-form","Long-form"]}],
+          help:'Include both short keywords ("private jet expedition") and longer natural-language queries. Both matter for GEO visibility.',
+          req:R.min(5,"term"),
+          out:function(v){ var es=filled(v,"term");
+            if(!es.length) return "";
+            var sh=es.filter(function(e){return (e.form||"Short-form")==="Short-form";});
+            var lo=es.filter(function(e){return e.form==="Long-form";});
+            var s="**Target search terms:**";
+            if(sh.length) s+="\n\nShort-form:\n"+sh.map(function(e){return "- "+t(e.term);}).join("\n");
+            if(lo.length) s+="\n\nLong-form queries:\n"+lo.map(function(e){return "- "+t(e.term);}).join("\n");
+            return s; } },
+        { id:"Q30", n:"Q30", label:"Are there topics, terms, or associations you do not want to be found for or associated with?", type:"repeat", max:10,
+          fields:[{key:"term",label:"Topic or term"},{key:"reason",label:"Reason"}],
+          help:"Competitor terms you don't want to trigger, price brackets you don't occupy, categories that attract the wrong audience.",
+          req:R.rec(),
+          out:function(v){ var b=filled(v,"term").map(function(e){return bulletPair(e.term,e.reason);});
+            return b.length ? "**Do not associate with:**\n"+b.join("\n") : ""; } },
+        { id:"Q31", n:"Q31", label:"Do you have different keyword or topic priorities for different geographic markets?", type:"toggletext",
+          revealLabel:"Describe the key differences",
+          help:"E.g. UK audiences use different search language than US audiences. Note the key differences so the AI writes and optimises appropriately for each.",
+          req:R.none(),
+          out:function(v){ v=v||{}; return (v.enabled && has(v.text)) ? "**Geographic market differences:**\n"+t(v.text) : ""; } }
+      ]}
+    ]
+  },
+
+  {
+    id:"never-do", file:"never-do", title:"Never Do", wrapper:"never_do", last:true,
+    desc:"The hard rules. If content breaks any of these, it gets rewritten before publishing. The most directly actionable file in the Brain for AI output quality.",
+    intro:["This is the most important file in the Brain for controlling AI output. Vague rules produce vague compliance.",
+           "For each rule, give it a name, describe what never to do, show a bad example, and show what good looks like instead. The more specific you are here, the more consistently every AI tool will follow it."],
+    sections:[
+      { name:"Messaging Rules", tag:"messaging_rules", questions:[
+        { id:"Q32", n:"Q32", label:"What are the messaging rules your brand never breaks?", type:"repeat", max:10,
+          fields:[
+            {key:"name",label:"Rule name",ph:'e.g. "Never perform luxury"'},
+            {key:"never",label:"What to never do"},
+            {key:"wrong",label:"Example of the wrong version",ta:true,must:true},
+            {key:"right",label:"Example of the right version",ta:true,must:true}
+          ],
+          help:"The wrong and right examples are non-negotiable — a rule with a concrete before/after teaches the AI to recognise the pattern, not just remember the instruction. A rule saves only once both examples are filled.",
+          req:R.complete(2,["wrong","right"]),
+          out:function(v){ var es=(v||[]).filter(function(e){return has(e.wrong)&&has(e.right);});
+            if(!es.length) return "";
+            return es.map(function(e,i){
+              var id = has(e.name) ? slug(e.name) : "rule-"+(i+1);
+              var inst = has(e.never) ? neverize(e.never) : (has(e.name)? "Never "+t(e.name).replace(/^never\s+/i,"").toLowerCase()+"." : "Never break this rule.");
+              return '<rule id="'+id+'">\n  <instruction>'+inst+'</instruction>\n  <wrong>'+t(e.wrong)+'</wrong>\n  <right>'+t(e.right)+'</right>\n</rule>';
+            }).join("\n\n"); } }
+      ]},
+      { name:"Positioning Restrictions", tag:"positioning_restrictions", questions:[
+        { id:"Q33", n:"Q33", label:"How should your brand never be positioned or described?", type:"repeat", max:8,
+          fields:[{key:"statement",label:"Never position us as"},{key:"reason",label:"Reason"}],
+          help:'The categories, comparisons, or framings that are simply wrong. E.g. "Never position us as a budget option." "Never describe us as a tour operator."',
+          req:R.min(2,"statement"),
+          out:function(v){ var b=filled(v,"statement").map(function(e){return bulletPair(e.statement,e.reason);});
+            return b.length ? "**Never position as:**\n"+b.join("\n") : ""; } }
+      ]},
+      { name:"Claims Restrictions", tag:"claims_restrictions", questions:[
+        { id:"Q34", n:"Q34", label:"Are there claims your brand should never make, even if they seem positive?", type:"repeat", max:10,
+          fields:[{key:"claim",label:"Never claim"},{key:"reason",label:"Why"}],
+          help:"Unverified superlatives, access claims that haven't been confirmed, safety or medical claims that need sign-off, pricing you never state publicly, comparisons you can't substantiate.",
+          req:R.min(2,"claim"),
+          out:function(v){ var b=filled(v,"claim").map(function(e){return bulletPair(e.claim,e.reason);});
+            return b.length ? "**Never claim:**\n"+b.join("\n") : ""; } }
+      ]},
+      { name:"Content Restrictions", tag:"content_restrictions", questions:[
+        { id:"Q35", n:"Q35", label:"Are there content types or formats your brand should never produce?", type:"repeat", max:8,
+          fields:[{key:"type",label:"Never create"},{key:"reason",label:"Reason",opt:true}],
+          help:'E.g. "Never produce countdown urgency copy." "Never write simulated customer testimonials." "Never publish pricing without sign-off."',
+          req:R.min(1,"type"),
+          out:function(v){ var b=filled(v,"type").map(function(e){return bulletPair(e.type,e.reason);});
+            return b.length ? "**Never create:**\n"+b.join("\n") : ""; } }
+      ]},
+      { name:"Audience Restrictions", tag:"audience_restrictions", questions:[
+        { id:"Q36", n:"Q36", label:"Are there audience targeting approaches that are off-limits?", type:"textarea", size:"md",
+          help:"Segments you've decided not to pursue, demographics that would be inappropriate for your brand, contexts or placements where you don't want to appear.",
+          req:R.none(),
+          out:function(v){ return has(v) ? "**Audience restrictions:** "+t(v) : ""; } }
+      ]},
+      { name:"AI Operating Instructions", tag:"ai_operating_instructions", questions:[
+        { id:"Q37", n:"Q37", label:"What are the specific rules AI tools must follow when working for your brand?", type:"repeat", max:15,
+          fields:[{key:"mode",label:"Mode",toggle:["Always","Never"]},{key:"instruction",label:"Instruction"}],
+          help:'Instructions written directly for AI tools. E.g. "Always ask for a destination name before writing trip copy." "Never invent product details — mark unknowns for review instead."',
+          nudge:"What went wrong with the last piece of AI content you had to rewrite? Add a rule here.",
+          req:R.min(3,"instruction"),
+          out:function(v){ var es=filled(v,"instruction");
+            if(!es.length) return "";
+            var al=es.filter(function(e){return (e.mode||"Always")==="Always";});
+            var nv=es.filter(function(e){return e.mode==="Never";});
+            var s="";
+            if(al.length) s+="**AI must always:**\n"+al.map(function(e){return "- "+t(e.instruction);}).join("\n");
+            if(nv.length) s+=(s?"\n\n":"")+"**AI must never:**\n"+nv.map(function(e){return "- "+t(e.instruction);}).join("\n");
+            return s; } }
+      ]}
+    ]
+  }
+];
+
+// Flat lookup of every question by id
+var QByID = {};
+FILES.forEach(function(f){ f.sections.forEach(function(s){ s.questions.forEach(function(q){ q._file=f; QByID[q.id]=q; }); }); });
+
+/* ============================================================ *
+ * State + persistence
+ * ============================================================ */
+var STORE_KEY = "brandBrain.v1";
+var state = { answers:{}, current:"brand-profile" };
+
+function defaultVal(q){
+  switch(q.type){
+    case "dualtext":   return {brand:"",website:""};
+    case "repeat":     return [ blankEntry(q) ];
+    case "twocol":     return {always:["","",""], never:["","",""]};
+    case "tonetable":  return q.rows.map(function(r){ return {context:r,tone:"",phrase:""}; });
+    case "toggletext": return {enabled:false,text:""};
+    default:           return "";
+  }
+}
+function blankEntry(q){
+  var e={};
+  q.fields.forEach(function(f){ e[f.key] = f.toggle ? f.toggle[0] : ""; });
+  return e;
+}
+function getVal(q){
+  if(!(q.id in state.answers)) state.answers[q.id] = defaultVal(q);
+  return state.answers[q.id];
+}
+function load(){
+  try{
+    var raw = localStorage.getItem(STORE_KEY);
+    if(raw){ var d=JSON.parse(raw); if(d&&d.answers){ state.answers=d.answers; if(d.current) state.current=d.current; } }
+  }catch(e){ /* ignore corrupt storage */ }
+}
+var saveTimer=null;
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+  var pill=document.getElementById("savedPill");
+  pill.hidden=false; pill.style.opacity="1";
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(function(){ pill.style.opacity="0.45"; },1200);
+}
+
+/* ============================================================ *
+ * Requirement evaluation + completion
+ * ============================================================ */
+function reqMet(q){
+  var v=getVal(q), r=q.req;
+  switch(r.kind){
+    case "yes":
+      if(q.type==="dualtext") return has(v.brand)&&has(v.website);
+      if(q.type==="select")   return has(v);
+      return has(v);
+    case "min":      return filled(v,r.key).length >= r.n;
+    case "minEach":  return (v.always||[]).filter(has).length>=r.n && (v.never||[]).filter(has).length>=r.n;
+    case "minRows":  return (v||[]).filter(function(row){return has(row.tone);}).length >= r.n;
+    case "complete": return (v||[]).filter(function(e){return r.keys.every(function(k){return has(e[k]);});}).length >= r.n;
+    case "rec":
+    case "none":     return true;
+  }
+  return true;
+}
+function reqBlocking(q){ return q.req.kind!=="rec" && q.req.kind!=="none"; }
+function fileComplete(f){
+  return f.sections.every(function(s){
+    return s.questions.every(function(q){ return !reqBlocking(q) || reqMet(q); });
+  });
+}
+function completeCount(){ return FILES.filter(fileComplete).length; }
+
+// short requirement chip text
+function reqChip(q){
+  var r=q.req, met=reqMet(q);
+  if(r.kind==="rec")  return {cls:"req-opt", txt:"Recommended"};
+  if(r.kind==="none") return {cls:"req-opt", txt:"Optional"};
+  if(met) return {cls:"req-ok", txt:"Complete"};
+  switch(r.kind){
+    case "yes":      return {cls:"req-need", txt:"Required"};
+    case "min":      return {cls:"req-need", txt:"At least "+r.n};
+    case "minEach":  return {cls:"req-need", txt:r.n+" each side"};
+    case "minRows":  return {cls:"req-need", txt:"At least "+r.n+" rows"};
+    case "complete": return {cls:"req-need", txt:r.n+" with both examples"};
+  }
+  return {cls:"req-opt", txt:""};
+}
+
+/* ============================================================ *
+ * Rendering — left index
+ * ============================================================ */
+function renderNav(){
+  var ul=document.getElementById("fileNav");
+  ul.innerHTML="";
+  FILES.forEach(function(f,i){
+    var li=document.createElement("button");
+    li.className="file-item"+(f.id===state.current?" active":"")+(f.last?" last":"")+(fileComplete(f)?" done":"");
+    li.innerHTML=
+      '<span class="file-num">0'+(i+1)+'</span>'+
+      '<span class="file-meta"><span class="file-name">'+f.title+'</span><span class="file-tag">&lt;'+f.wrapper+'&gt;</span></span>'+
+      '<span class="file-check">&#10003;</span>';
+    li.addEventListener("click",function(){ goTo(f.id); });
+    ul.appendChild(li);
+  });
+  // locked V2 tab
+  var v2=document.createElement("button");
+  v2.className="file-item locked"+(state.current==="__v2"?" active":"");
+  v2.innerHTML='<span class="file-num">06</span><span class="file-meta"><span class="file-name">Decision Logic</span><span class="file-tag">strategic priorities</span></span><span class="lock-badge">V2</span>';
+  v2.addEventListener("click",function(){ goTo("__v2"); });
+  ul.appendChild(v2);
+
+  document.getElementById("progressNum").textContent=completeCount();
+  document.getElementById("progressFill").style.width=(completeCount()/5*100)+"%";
+}
+
+/* ============================================================ *
+ * Rendering — main content
+ * ============================================================ */
+function goTo(id){ state.current=id; save(); renderNav(); renderMain(); window.scrollTo({top:0,behavior:"smooth"}); }
+
+function renderMain(){
+  var main=document.getElementById("main");
+  main.innerHTML="";
+  if(state.current==="__v2"){ main.appendChild(renderV2()); return; }
+  var f=FILES.filter(function(x){return x.id===state.current;})[0];
+  if(!f) return;
+
+  var head=document.createElement("div");
+  head.className="file-head";
+  head.innerHTML='<div class="file-eyebrow">File '+(FILES.indexOf(f)+1)+' of 5 · '+f.file+'.md</div>'+
+    '<h1>'+f.title+'</h1><p class="file-desc">'+f.desc+'</p>';
+  main.appendChild(head);
+
+  if(f.intro){
+    var note=document.createElement("div");
+    note.className="intro-note";
+    note.innerHTML=f.intro.map(function(p){return "<p>"+p+"</p>";}).join("");
+    main.appendChild(note);
+  }
+
+  f.sections.forEach(function(s){
+    var block=document.createElement("div");
+    block.className="section-block";
+    block.innerHTML='<div class="section-head"><span class="section-name">'+s.name+'</span><span class="section-tag">&lt;'+s.tag+'&gt;</span></div>';
+    s.questions.forEach(function(q){ block.appendChild(buildQuestion(q)); });
+    main.appendChild(block);
+  });
+
+  // footer nav
+  var idx=FILES.indexOf(f);
+  var foot=document.createElement("div");
+  foot.className="file-foot";
+  var prev=document.createElement("button");
+  prev.className="btn btn-ghost"; prev.textContent="← Previous";
+  prev.disabled = idx===0;
+  prev.addEventListener("click",function(){ if(idx>0) goTo(FILES[idx-1].id); });
+  foot.appendChild(prev);
+  var next=document.createElement("button");
+  if(idx<FILES.length-1){ next.className="btn btn-primary"; next.textContent="Next file →";
+    next.addEventListener("click",function(){ goTo(FILES[idx+1].id); }); }
+  else { next.className="btn btn-primary"; next.textContent="Review & export";
+    next.addEventListener("click",openExport); }
+  foot.appendChild(next);
+  main.appendChild(foot);
+}
+
+function renderV2(){
+  var d=document.createElement("div");
+  d.className="locked-panel";
+  d.innerHTML='<div class="file-eyebrow">Locked · Decision Logic (V2)</div>'+
+    '<h2>Coming in V2: Strategic priorities and conflict resolution.</h2>'+
+    '<blockquote>When your brand objectives conflict — premium positioning vs reach, distinctiveness vs search volume, expertise vs accessibility — what wins? The Decision Logic layer encodes those answers so every AI tool draws from the same strategic logic, not its own interpretation.<br><br>'+
+    'This layer is owned by VP/Marketing Leadership and sits above the five information files as the governing priority framework.</blockquote>';
+  return d;
+}
+
+/* ---- per-question builder ---- */
+function buildQuestion(q){
+  var wrap=document.createElement("div");
+  wrap.className="q"; wrap.id="q-"+q.id;
+  var chip=reqChip(q);
+  var head=document.createElement("div");
+  head.innerHTML='<label class="q-label"><span class="q-id">'+q.n+'</span>'+q.label+
+    '<span class="q-req '+chip.cls+'" id="chip-'+q.id+'">'+chip.txt+'</span></label>'+
+    (q.help?'<div class="q-help">'+q.help+'</div>':'');
+  wrap.appendChild(head);
+  var body=document.createElement("div");
+  body.className="q-body";
+  body.appendChild(renderInput(q));
+  wrap.appendChild(body);
+  if(q.nudge){ var n=document.createElement("div"); n.className="nudge"; n.textContent="“"+q.nudge+"”"; wrap.appendChild(n); }
+  return wrap;
+}
+// rebuild a single question in place (after structural add/remove)
+function rerender(q){
+  var old=document.getElementById("q-"+q.id);
+  if(old){ var fresh=buildQuestion(q); old.parentNode.replaceChild(fresh,old); }
+}
+// update only the requirement chip (after keystrokes) without touching inputs
+function refreshChip(q){
+  var el=document.getElementById("chip-"+q.id);
+  if(el){ var c=reqChip(q); el.className="q-req "+c.cls; el.textContent=c.txt; }
+}
+// called on any change
+function onChange(q){ save(); refreshChip(q); renderNav(); updateMasterButton(); if(masterOpen) renderMaster(); }
+
+function renderInput(q){
+  switch(q.type){
+    case "text":       return inputText(q);
+    case "textarea":   return inputTextarea(q);
+    case "select":     return inputSelect(q);
+    case "dualtext":   return inputDual(q);
+    case "repeat":     return inputRepeat(q);
+    case "twocol":     return inputTwoCol(q);
+    case "tonetable":  return inputToneTable(q);
+    case "toggletext": return inputToggleText(q);
+  }
+  return document.createElement("div");
+}
+
+function inputText(q){
+  var i=document.createElement("input"); i.type="text"; i.value=getVal(q); if(q.ph) i.placeholder=q.ph;
+  i.addEventListener("input",function(){ state.answers[q.id]=i.value; onChange(q); });
+  return i;
+}
+function inputTextarea(q){
+  var ta=document.createElement("textarea"); ta.className="ta-"+(q.size||"md"); ta.value=getVal(q); if(q.ph) ta.placeholder=q.ph;
+  ta.addEventListener("input",function(){ state.answers[q.id]=ta.value; onChange(q); });
+  return ta;
+}
+function inputSelect(q){
+  var s=document.createElement("select");
+  var ph=document.createElement("option"); ph.value=""; ph.textContent="Choose…"; s.appendChild(ph);
+  q.options.forEach(function(o){ var op=document.createElement("option"); op.value=o; op.textContent=o; s.appendChild(op); });
+  s.value=getVal(q);
+  s.addEventListener("change",function(){ state.answers[q.id]=s.value; onChange(q); });
+  return s;
+}
+function inputDual(q){
+  var v=getVal(q), g=document.createElement("div"); g.className="grid-2";
+  q.fields.forEach(function(f){
+    var cell=document.createElement("div");
+    var inp=document.createElement("input"); inp.type = f.key==="website"?"url":"text"; inp.value=v[f.key]||""; if(f.ph) inp.placeholder=f.ph;
+    inp.addEventListener("input",function(){ v[f.key]=inp.value; onChange(q); });
+    cell.innerHTML='<label class="field-label">'+f.label+'</label>';
+    cell.appendChild(inp); g.appendChild(cell);
+  });
+  return g;
+}
+
+function fieldControl(q,entry,f){
+  var label=document.createElement("label"); label.className="field-label";
+  label.innerHTML=f.label+(f.opt?' <span class="opt">(optional)</span>':'')+(f.must?' <span class="opt" style="color:var(--warn)">(required)</span>':'');
+  var ctrl;
+  if(f.toggle){
+    ctrl=document.createElement("div"); ctrl.className="seg mini";
+    f.toggle.forEach(function(opt){
+      var b=document.createElement("button"); b.type="button"; b.textContent=opt;
+      if((entry[f.key]||f.toggle[0])===opt) b.className="on";
+      b.addEventListener("click",function(){ entry[f.key]=opt; rerender(q); onChange(q); });
+      ctrl.appendChild(b);
+    });
+  } else if(f.ta){
+    ctrl=document.createElement("textarea"); ctrl.className="ta-sm"; ctrl.value=entry[f.key]||""; if(f.ph) ctrl.placeholder=f.ph;
+    ctrl.addEventListener("input",function(){ entry[f.key]=ctrl.value; onChange(q); markEntryValidity(q); });
+  } else {
+    ctrl=document.createElement("input"); ctrl.type="text"; ctrl.value=entry[f.key]||""; if(f.ph) ctrl.placeholder=f.ph;
+    ctrl.addEventListener("input",function(){ entry[f.key]=ctrl.value; onChange(q); markEntryValidity(q); });
+  }
+  var box=document.createElement("div"); box.className="field"; box.appendChild(label); box.appendChild(ctrl);
+  return box;
+}
+// for Q32-style: outline entries missing required example fields
+function markEntryValidity(q){
+  if(q.req.kind!=="complete") return;
+  var v=getVal(q);
+  var nodes=document.querySelectorAll("#q-"+q.id+" .entry");
+  v.forEach(function(e,i){
+    var node=nodes[i]; if(!node) return;
+    var anyContent = q.fields.some(function(f){return has(e[f.key]);});
+    var ok = q.req.keys.every(function(k){return has(e[k]);});
+    node.classList.toggle("invalid", anyContent && !ok);
+    var flag=node.querySelector(".entry-flag");
+    if(flag) flag.textContent = (anyContent && !ok) ? "needs both examples to save" : "";
+  });
+}
+
+function inputRepeat(q){
+  var v=getVal(q);
+  if(!Array.isArray(v)){ v=[blankEntry(q)]; state.answers[q.id]=v; }
+  var box=document.createElement("div");
+  v.forEach(function(entry,i){
+    var card=document.createElement("div"); card.className="entry";
+    if(!q.single){
+      var hd=document.createElement("div"); hd.className="entry-head";
+      hd.innerHTML='<span class="entry-num">'+(i+1)+'</span><span class="entry-flag"></span>';
+      var x=document.createElement("button"); x.className="remove-x"; x.innerHTML="&times;"; x.title="Remove";
+      x.addEventListener("click",function(){
+        v.splice(i,1); if(v.length===0) v.push(blankEntry(q)); rerender(q); onChange(q);
+      });
+      hd.appendChild(x); card.appendChild(hd);
+    }
+    q.fields.forEach(function(f){ card.appendChild(fieldControl(q,entry,f)); });
+    box.appendChild(card);
+  });
+  if(!q.single){
+    var add=document.createElement("button"); add.className="add-btn"; add.innerHTML='<span class="plus">+</span> Add another';
+    add.disabled = q.max && v.length>=q.max;
+    add.addEventListener("click",function(){ if(!q.max||v.length<q.max){ v.push(blankEntry(q)); rerender(q); onChange(q); } });
+    var foot=document.createElement("div"); foot.style.marginTop="2px"; foot.appendChild(add);
+    if(q.max){ var cap=document.createElement("span"); cap.className="cap-note"; cap.textContent=v.length+" / "+q.max; foot.appendChild(cap); }
+    box.appendChild(foot);
+  }
+  setTimeout(function(){ markEntryValidity(q); },0);
+  return box;
+}
+
+function inputTwoCol(q){
+  var v=getVal(q); if(!v.always) v.always=[""]; if(!v.never) v.never=[""];
+  var grid=document.createElement("div"); grid.className="twocol";
+  [["always",q.colLabels[0]],["never",q.colLabels[1]]].forEach(function(pair){
+    var key=pair[0], list=v[key];
+    var col=document.createElement("div");
+    var ch=document.createElement("div"); ch.className="col-head";
+    ch.innerHTML=pair[1]+' <span class="tick">'+list.filter(has).length+'</span>';
+    col.appendChild(ch);
+    list.forEach(function(val,i){
+      var line=document.createElement("div"); line.className="row-line";
+      var inp=document.createElement("input"); inp.type="text"; inp.value=val;
+      inp.addEventListener("input",function(){ list[i]=inp.value; ch.querySelector(".tick").textContent=list.filter(has).length; onChange(q); });
+      line.appendChild(inp);
+      var x=document.createElement("button"); x.className="remove-x"; x.innerHTML="&times;";
+      x.addEventListener("click",function(){ list.splice(i,1); if(!list.length) list.push(""); rerender(q); onChange(q); });
+      line.appendChild(x); col.appendChild(line);
+    });
+    var add=document.createElement("button"); add.className="add-btn"; add.innerHTML='<span class="plus">+</span> Add';
+    add.addEventListener("click",function(){ list.push(""); rerender(q); onChange(q); });
+    col.appendChild(add); grid.appendChild(col);
+  });
+  return grid;
+}
+
+function inputToneTable(q){
+  var v=getVal(q);
+  // ensure shape matches configured rows
+  if(!Array.isArray(v) || v.length!==q.rows.length){
+    v=q.rows.map(function(r,i){ var ex=(v&&v[i])||{}; return {context:r,tone:t(ex.tone),phrase:t(ex.phrase)}; });
+    state.answers[q.id]=v;
+  }
+  var tbl=document.createElement("table"); tbl.className="tbl";
+  tbl.innerHTML="<thead><tr><th>Context</th><th>Desired tone</th><th>Example phrase</th></tr></thead>";
+  var tb=document.createElement("tbody");
+  v.forEach(function(row){
+    var tr=document.createElement("tr");
+    var td0=document.createElement("td"); td0.className="ctx"; td0.textContent=row.context; tr.appendChild(td0);
+    ["tone","phrase"].forEach(function(k){
+      var td=document.createElement("td");
+      var inp=document.createElement("input"); inp.type="text"; inp.value=row[k]||"";
+      inp.placeholder = k==="tone" ? "—" : "optional";
+      inp.addEventListener("input",function(){ row[k]=inp.value; onChange(q); });
+      td.appendChild(inp); tr.appendChild(td);
+    });
+    tb.appendChild(tr);
+  });
+  tbl.appendChild(tb);
+  return tbl;
+}
+
+function inputToggleText(q){
+  var v=getVal(q);
+  var wrap=document.createElement("div");
+  var seg=document.createElement("div"); seg.className="seg";
+  [["No",false],["Yes",true]].forEach(function(p){
+    var b=document.createElement("button"); b.type="button"; b.textContent=p[0];
+    if(!!v.enabled===p[1]) b.className="on";
+    b.addEventListener("click",function(){ v.enabled=p[1]; rerender(q); onChange(q); });
+    seg.appendChild(b);
+  });
+  wrap.appendChild(seg);
+  if(v.enabled){
+    var rv=document.createElement("div"); rv.className="toggle-reveal";
+    rv.innerHTML='<label class="field-label">'+(q.revealLabel||"Details")+'</label>';
+    var ta=document.createElement("textarea"); ta.className="ta-md"; ta.value=v.text||"";
+    ta.addEventListener("input",function(){ v.text=ta.value; onChange(q); });
+    rv.appendChild(ta); wrap.appendChild(rv);
+  }
+  return wrap;
+}
+
+/* ============================================================ *
+ * Master Context Block
+ * ============================================================ */
+function firstEntry(qid,key){ var v=state.answers[qid]; if(!Array.isArray(v)) return ""; for(var i=0;i<v.length;i++){ if(has(v[i][key])) return t(v[i][key]); } return ""; }
+function topTerms(n){ var v=state.answers.Q13; if(!Array.isArray(v)) return []; return v.filter(function(e){return has(e.term);}).slice(0,n).map(function(e){return t(e.term);}); }
+function firstRules(n){
+  var v=state.answers.Q32; if(!Array.isArray(v)) return [];
+  return v.filter(function(e){return has(e.never)||has(e.name);}).slice(0,n).map(function(e){
+    return has(e.never)? neverize(e.never) : ("Never "+t(e.name).replace(/^never\s+/i,"").toLowerCase()+".");
+  });
+}
+function masterReady(){
+  var Q1=state.answers.Q1||{};
+  return has(Q1.brand) && has(state.answers.Q2) && has(state.answers.Q9) &&
+         has(state.answers.Q18) && has(state.answers.Q19) &&
+         topTerms(1).length>0 && firstRules(1).length>0;
+}
+function masterText(){
+  var Q1=state.answers.Q1||{};
+  var brand=t(Q1.brand)||"[Brand]", site=t(Q1.website);
+  var lines=[];
+  lines.push("You are working for "+brand+(site?" ("+site+")":"")+".");
+  lines.push("");
+  lines.push(t(state.answers.Q2));
+  lines.push("");
+  lines.push("Our primary customer: "+t(state.answers.Q18)+". They are looking for "+t(state.answers.Q19)+".");
+  lines.push("");
+  var voice="Our brand voice is "+t(state.answers.Q9)+".";
+  var alw=(state.answers.Q10&&state.answers.Q10.always||[]).filter(has)[0];
+  var nev=(state.answers.Q10&&state.answers.Q10.never||[]).filter(has)[0];
+  if(alw) voice+=" Always "+alw.charAt(0).toLowerCase()+alw.slice(1)+".";
+  if(nev) voice+=" Never "+nev.charAt(0).toLowerCase()+nev.slice(1)+".";
+  lines.push(voice);
+  lines.push("");
+  var terms=topTerms(5);
+  if(terms.length) lines.push("Key terminology: "+terms.join(", ")+".");
+  var rules=firstRules(2);
+  if(rules.length){ lines.push(""); lines.push("Critical rules: "+rules.join(" ")); }
+  lines.push("");
+  lines.push("The full Brand Brain is loaded as supporting context. Refer to it for audience detail, competitive positioning, keyword priorities, and the complete list of restrictions.");
+  return lines.join("\n").replace(/\n{3,}/g,"\n\n").trim();
+}
+function updateMasterButton(){
+  var btn=document.getElementById("openMaster");
+  var ready=masterReady();
+  btn.disabled=!ready;
+  btn.title = ready ? "View your Master Context Block" : "Answer Q1, Q2, Q9, Q13, Q18, Q19 and add a rule in Q32 to unlock";
+}
+function renderMaster(){
+  var c=document.getElementById("mcbContent");
+  if(!masterReady()){
+    c.innerHTML='<div class="mcb-empty">Your Master Context Block unlocks once you’ve answered the core questions: brand name (Q1), elevator pitch (Q2), voice (Q9), at least one term (Q13), primary customer (Q18), what they want (Q19), and at least one messaging rule (Q32).</div>';
+    document.getElementById("mcbWords").textContent="";
+    return;
+  }
+  var txt=masterText();
+  var pre=document.createElement("pre"); pre.className="mono-box"; pre.textContent=txt;
+  c.innerHTML=""; c.appendChild(pre);
+  var words=txt.split(/\s+/).filter(Boolean).length;
+  document.getElementById("mcbWords").textContent=words+" words";
+}
+
+/* ============================================================ *
+ * Output assembly
+ * ============================================================ */
+function compileFile(f){
+  var out="# "+f.title+"\n\n<"+f.wrapper+">\n";
+  f.sections.forEach(function(s){
+    var parts=[];
+    s.questions.forEach(function(q){ var o=t(q.out(getVal(q))); if(o) parts.push(o); });
+    out+="\n## "+s.name+"\n\n<"+s.tag+">\n\n";
+    out+= parts.length ? parts.join("\n\n") : "*Not yet provided.*";
+    out+="\n\n</"+s.tag+">\n";
+  });
+  out+="\n</"+f.wrapper+">\n";
+  return out;
+}
+function brandSlug(){ var Q1=state.answers.Q1||{}; return slug(Q1.brand); }
+function fileName(f){ return brandSlug()+"-"+f.file+".md"; }
+
+/* ---- native ZIP writer (store / no compression) ---- *
+ * Avoids a 97KB third-party dependency while keeping the app a
+ * single self-contained, fully-offline file. Plain-text inputs
+ * compress poorly enough that "store" is a fine trade for size. */
+var CRC_TABLE=(function(){ var tbl=[]; for(var n=0;n<256;n++){ var c=n; for(var k=0;k<8;k++){ c = (c&1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1); } tbl[n]=c>>>0; } return tbl; })();
+function crc32(u8){ var crc=0xFFFFFFFF; for(var i=0;i<u8.length;i++){ crc=(crc>>>8) ^ CRC_TABLE[(crc ^ u8[i])&0xFF]; } return (crc ^ 0xFFFFFFFF)>>>0; }
+function makeZip(files){
+  var enc=new TextEncoder(), local=[], central=[], offset=0;
+  files.forEach(function(f){
+    var data=enc.encode(f.content), name=enc.encode(f.name), crc=crc32(data);
+    var lh=new DataView(new ArrayBuffer(30)), o=0;
+    lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0,true); lh.setUint16(8,0,true);
+    lh.setUint16(10,0,true); lh.setUint16(12,0x21,true); lh.setUint32(14,crc,true);
+    lh.setUint32(18,data.length,true); lh.setUint32(22,data.length,true);
+    lh.setUint16(26,name.length,true); lh.setUint16(28,0,true);
+    local.push(new Uint8Array(lh.buffer),name,data);
+    var ch=new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0,true);
+    ch.setUint16(10,0,true); ch.setUint16(12,0,true); ch.setUint16(14,0x21,true); ch.setUint32(16,crc,true);
+    ch.setUint32(20,data.length,true); ch.setUint32(24,data.length,true); ch.setUint16(28,name.length,true);
+    ch.setUint16(30,0,true); ch.setUint16(32,0,true); ch.setUint16(34,0,true); ch.setUint16(36,0,true);
+    ch.setUint32(38,0,true); ch.setUint32(42,offset,true);
+    central.push(new Uint8Array(ch.buffer),name);
+    offset += 30 + name.length + data.length;
+  });
+  var cSize=central.reduce(function(a,b){return a+b.length;},0);
+  var end=new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true); end.setUint16(8,files.length,true); end.setUint16(10,files.length,true);
+  end.setUint32(12,cSize,true); end.setUint32(16,offset,true); end.setUint16(20,0,true);
+  var blobParts=local.concat(central).concat([new Uint8Array(end.buffer)]);
+  return new Blob(blobParts,{type:"application/zip"});
+}
+function downloadBlob(blob,name){
+  var url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download=name; document.body.appendChild(a); a.click();
+  document.body.removeChild(a); setTimeout(function(){URL.revokeObjectURL(url);},1000);
+}
+function downloadFile(f){ downloadBlob(new Blob([compileFile(f)],{type:"text/markdown"}), fileName(f)); }
+function downloadAll(){
+  var files=FILES.map(function(f){ return {name:fileName(f), content:compileFile(f)}; });
+  downloadBlob(makeZip(files), brandSlug()+"-brand-brain.zip");
+}
+
+/* ============================================================ *
+ * Export panel
+ * ============================================================ */
+var exportPreviewFile=null;
+function renderExport(){
+  var list=document.getElementById("exportList"); list.innerHTML="";
+  if(!exportPreviewFile) exportPreviewFile=FILES[0].id;
+  FILES.forEach(function(f){
+    var row=document.createElement("div"); row.className="exp-row";
+    var done=fileComplete(f);
+    row.innerHTML='<div class="exp-meta"><div class="exp-name">'+fileName(f)+'</div>'+
+      '<div class="exp-state '+(done?"ready":"")+'">'+(done?"Complete":"In progress")+'</div></div>';
+    var actions=document.createElement("div"); actions.className="exp-actions";
+    var pv=document.createElement("button"); pv.className="btn btn-ghost btn-sm"; pv.textContent="Preview";
+    pv.addEventListener("click",function(){ exportPreviewFile=f.id; document.getElementById("exportPreview").textContent=compileFile(f); });
+    var dl=document.createElement("button"); dl.className="btn btn-primary btn-sm"; dl.textContent="Download";
+    dl.addEventListener("click",function(){ downloadFile(f); });
+    actions.appendChild(pv); actions.appendChild(dl); row.appendChild(actions);
+    list.appendChild(row);
+  });
+  var pf=FILES.filter(function(x){return x.id===exportPreviewFile;})[0]||FILES[0];
+  document.getElementById("exportPreview").textContent=compileFile(pf);
+}
+
+/* ============================================================ *
+ * Panels + toast wiring
+ * ============================================================ */
+var masterOpen=false, exportOpen=false;
+function openPanel(which){
+  var scrim=document.getElementById(which+"Scrim"), panel=document.getElementById(which+"Panel");
+  scrim.classList.add("open"); panel.classList.add("open"); panel.setAttribute("aria-hidden","false");
+}
+function closePanel(which){
+  var scrim=document.getElementById(which+"Scrim"), panel=document.getElementById(which+"Panel");
+  scrim.classList.remove("open"); panel.classList.remove("open"); panel.setAttribute("aria-hidden","true");
+  if(which==="master") masterOpen=false; if(which==="export") exportOpen=false;
+}
+function openMaster(){ masterOpen=true; renderMaster(); openPanel("master"); }
+function openExport(){ exportOpen=true; renderExport(); openPanel("export"); }
+function toast(msg){
+  var el=document.getElementById("toast"); el.textContent=msg; el.classList.add("show");
+  setTimeout(function(){ el.classList.remove("show"); },1800);
+}
+
+/* ============================================================ *
+ * Init
+ * ============================================================ */
+function init(){
+  load();
+  if(state.current!=="__v2" && !FILES.some(function(f){return f.id===state.current;})) state.current="brand-profile";
+  renderNav(); renderMain(); updateMasterButton();
+
+  document.getElementById("openMaster").addEventListener("click",function(){ if(!this.disabled) openMaster(); });
+  document.getElementById("openExport").addEventListener("click",openExport);
+  document.getElementById("masterScrim").addEventListener("click",function(){ closePanel("master"); });
+  document.getElementById("exportScrim").addEventListener("click",function(){ closePanel("export"); });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-close]"),function(b){
+    b.addEventListener("click",function(){ closePanel(b.getAttribute("data-close")); });
+  });
+  document.getElementById("copyMaster").addEventListener("click",function(){
+    var txt=masterText();
+    navigator.clipboard && navigator.clipboard.writeText(txt).then(function(){ toast("Master Context copied"); },
+      function(){ legacyCopy(txt); });
+    if(!navigator.clipboard) legacyCopy(txt);
+  });
+  document.getElementById("downloadZip").addEventListener("click",downloadAll);
+  document.getElementById("clearAll").addEventListener("click",function(){
+    if(confirm("Clear all answers? This cannot be undone.")){
+      state.answers={}; save(); renderNav(); renderMain(); updateMasterButton(); toast("All answers cleared");
+    }
+  });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ closePanel("master"); closePanel("export"); } });
+}
+function legacyCopy(txt){
+  var ta=document.createElement("textarea"); ta.value=txt; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); toast("Master Context copied"); }catch(e){ toast("Copy failed — select manually"); }
+  document.body.removeChild(ta);
+}
+document.addEventListener("DOMContentLoaded",init);
+</script>
+</body>
+</html>
