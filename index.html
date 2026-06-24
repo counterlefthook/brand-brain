@@ -719,33 +719,33 @@ var FILES = [
       { name:"Company Overview", tag:"company_overview", questions:[
         { id:"Q1", n:"Q1", label:"What is your brand name and website?", type:"dualtext",
           fields:[{key:"brand",label:"Brand name",ph:"e.g. Exodus"},{key:"website",label:"Website URL",ph:"https://"}],
-          help:"These seed every output file header and the Master Context Block.",
+          help:"Used in every output file header and the Master Context Block.",
           req:R.yes(),
           out:function(v){ v=v||{}; return "**Brand:** "+t(v.brand)+"\n**Website:** "+t(v.website); } },
-        { id:"Q2", n:"Q2", label:"Describe what you do in one or two sentences, as if explaining to someone at a dinner party who has never heard of you.", type:"textarea", size:"sm",
-          help:"Avoid jargon. This becomes the opening line inside every AI interaction. If you have to think about it, that's normal - it's harder than it sounds.",
+        { id:"Q2", n:"Q2", label:"Describe what you do in one or two sentences, in plain language for someone unfamiliar with your company.", type:"textarea", size:"sm",
+          help:"One or two plain-language sentences, without jargon. This becomes the opening line of context in every AI interaction.",
           req:R.yes(),
           out:function(v){ return "**Elevator pitch:** "+t(v); } },
         { id:"Q3", n:"Q3", label:"What specific problem do you solve for your customers?", type:"textarea", size:"sm",
-          help:"Think about the frustration, gap, or desire your product removes. Not features - the underlying problem your customer has before they find you.",
+          help:"State the underlying problem the customer has before they find you, not your product features.",
           req:R.yes(),
           out:function(v){ return "**Problem solved:** "+t(v); } }
       ]},
       { name:"Products and Services", tag:"products_and_services", questions:[
         { id:"Q4", n:"Q4", label:"Describe your core product or service in plain terms. If you have more than one, list the top three.", type:"repeat", max:5,
           fields:[{key:"name",label:"Product or service name"},{key:"desc",label:"One-sentence description"},{key:"benefit",label:"The single biggest benefit to the customer"}],
-          help:"Focus on what the customer gets, not how you deliver it.",
+          help:"Describe what the customer gets, not how you deliver it.",
           req:R.min(1,"name"),
           out:function(v){ return filled(v,"name").map(function(e){ var s="<product>\n  <name>"+t(e.name)+"</name>"; if(has(e.desc)) s+="\n  <description>"+t(e.desc)+"</description>"; if(has(e.benefit)) s+="\n  <key_benefit>"+t(e.benefit)+"</key_benefit>"; return s+"\n</product>"; }).join("\n"); } }
       ]},
       { name:"Competitive Positioning", tag:"competitive_positioning", questions:[
         { id:"Q5", n:"Q5", label:"Why do customers choose you over the alternatives?", type:"textarea", size:"md",
-          help:'Be specific. "Better service" is not an answer. What do you do that customers genuinely cannot easily get elsewhere?',
+          help:"State what customers cannot easily get elsewhere. Avoid generic claims such as \"better service.\"",
           req:R.yes(),
           out:function(v){ return "**Why customers choose us:** "+t(v); } },
         { id:"Q6", n:"Q6", label:"What are your three to five strongest proof points?", type:"repeat", max:5,
           fields:[{key:"point",label:"Proof point"},{key:"source",label:"Source or context",opt:true}],
-          help:"Facts that back up your positioning: years in business, customer numbers, awards, verified statistics, notable clients. If you don't have evidence for a claim, don't include it here.",
+          help:"Verifiable facts that support your positioning: years in business, customer numbers, awards, statistics, or notable clients. Include only claims you can evidence.",
           req:R.min(2,"point"),
           out:function(v){ var b=filled(v,"point").map(function(e){return bulletPair(e.point,e.source);});
             return b.length ? "**Proof points:**\n"+b.join("\n") : ""; } }
@@ -753,14 +753,14 @@ var FILES = [
       { name:"Competitors", tag:"competitors", questions:[
         { id:"Q7", n:"Q7", label:"Who are your two or three main competitors?", type:"repeat", max:5,
           fields:[{key:"name",label:"Competitor name"},{key:"strength",label:"Their main strength"},{key:"adv",label:"Your advantage against them"}],
-          help:"Be honest about their strengths. The Brain is more useful when it understands the real competitive landscape, not a flattering version of it.",
+          help:"Record each competitor's genuine strengths alongside your advantage. Accurate competitive context produces more useful output.",
           req:R.min(1,"name"),
           out:function(v){ return filled(v,"name").map(function(e){ var s="<competitor>\n  <name>"+t(e.name)+"</name>"; if(has(e.strength)) s+="\n  <their_strength>"+t(e.strength)+"</their_strength>"; if(has(e.adv)) s+="\n  <our_advantage>"+t(e.adv)+"</our_advantage>"; return s+"\n</competitor>"; }).join("\n"); } }
       ]},
       { name:"What We Are Not", tag:"what_we_are_not", questions:[
         { id:"Q8", n:"Q8", label:'Complete the sentence: "We are NOT…" Add up to five.', type:"repeat", max:5,
           fields:[{key:"statement",label:"We are not…"},{key:"reason",label:"Why this matters to state",opt:true}],
-          help:'The misperceptions, the categories you don\'t want to be placed in, or the comparisons that frustrate you. E.g. "We are not a budget option." "We are not a tech company that happens to do travel."',
+          help:"Categories, comparisons, or misperceptions to rule out. Examples: \"We are not a budget option.\" \"We are not a tech company that happens to do travel.\"",
           req:R.min(2,"statement"),
           out:function(v){ var b=filled(v,"statement").map(function(e){return bulletPair(e.statement,e.reason);});
             return b.length ? "**We are NOT:**\n"+b.join("\n") : ""; } }
@@ -774,12 +774,12 @@ var FILES = [
     sections:[
       { name:"Brand Voice", tag:"brand_voice", questions:[
         { id:"Q9", n:"Q9", label:"Describe your brand voice in three to five words.", type:"text", ph:"e.g. Direct, warm, quietly confident",
-          help:'Think of adjectives you\'d use to describe a person with this voice. E.g. "Expert, grounded, never flashy."',
+          help:"Three to five adjectives that describe the voice. Example: \"Expert, grounded, never flashy.\"",
           req:R.yes(),
           out:function(v){ return "**Brand voice:** "+t(v); } },
         { id:"Q10", n:"Q10", label:"What should your brand always sound like? And what should it never sound like?", type:"twocol",
           colLabels:["Always sounds like","Never sounds like"],
-          help:"E.g. Always: specific and grounded. Never: salesy or breathless. Always: warm and inviting. Never: cold or corporate.",
+          help:"List specific, contrasting traits. For example, Always: specific and grounded. Never: salesy or breathless.",
           req:R.minEach(3),
           out:function(v){ v=v||{}; var a=(v.always||[]).filter(has), n=(v.never||[]).filter(has);
             if(!a.length && !n.length) return "";
@@ -788,31 +788,31 @@ var FILES = [
             if(n.length) s+=(s?"\n\n":"")+"**Never sounds:**\n"+n.map(function(x){return "- "+t(x);}).join("\n");
             return s; } },
         { id:"Q11", n:"Q11", label:"Give us an example of copy written in your brand voice that you consider a gold standard.", type:"textarea", size:"lg",
-          help:"From your website, a past campaign, or something you write now. It becomes the reference example inside the Brain - the AI will use it as a target to match.",
+          help:"Paste copy you consider on-brand, from your website, a past campaign, or written now. The AI uses it as a target to match.",
           req:R.rec(),
           out:function(v){ return has(v) ? "<voice_example_good>\n"+t(v)+"\n</voice_example_good>" : ""; } },
         { id:"Q12", n:"Q12", label:"Give us an example of copy that sounds wrong for your brand, and explain briefly why.", type:"repeat", max:1, single:true,
           fields:[{key:"example",label:"Example of wrong-sounding copy",ta:true},{key:"why",label:"Why it's wrong"}],
-          help:"This is as useful as the good example. It teaches the AI what to avoid specifically. The more concrete, the better.",
+          help:"Provide a concrete off-brand example and the reason it is wrong. This defines what the AI should avoid.",
           req:R.rec(),
           out:function(v){ var e=(v&&v[0])||{}; return has(e.example) ? "<voice_example_bad>\n"+t(e.example)+"\n\nWhy this is wrong: "+t(e.why)+"\n</voice_example_bad>" : ""; } }
       ]},
       { name:"Terminology", tag:"terminology", questions:[
         { id:"Q13", n:"Q13", label:"List the specific words and phrases your brand always uses.", type:"repeat", max:20,
           fields:[{key:"term",label:"Use this term"},{key:"instead",label:"Instead of",opt:true}],
-          help:'Product names, category terms, preferred descriptions. E.g. "We always say expedition, not tour." Include the preferred term and, if useful, what it replaces.',
+          help:"Preferred product names, category terms, and descriptions. Enter the term to use and, where useful, the term it replaces. Example: use \"expedition,\" not \"tour.\"",
           req:R.min(3,"term"),
           out:function(v){ var es=filled(v,"term"); if(!es.length) return ""; return "<preferred_terms>\n"+es.map(function(e){ var s="  <preferred_term>\n    <use>"+t(e.term)+"</use>"; if(has(e.instead)) s+="\n    <instead_of>"+t(e.instead)+"</instead_of>"; return s+"\n  </preferred_term>"; }).join("\n")+"\n</preferred_terms>"; } },
         { id:"Q14", n:"Q14", label:"List words and phrases your brand actively avoids.", type:"repeat", max:20,
           fields:[{key:"avoid",label:"Avoid this term"},{key:"reason",label:"Reason",opt:true}],
-          help:"Overused industry words, competitor language, terms that feel off-brand. Add a reason for any that aren't obvious, so the AI understands the principle, not just the rule.",
+          help:"Words and phrases to avoid: overused industry terms, competitor language, or anything off-brand. Add a reason where it is not obvious.",
           req:R.min(3,"avoid"),
           out:function(v){ var es=filled(v,"avoid"); if(!es.length) return ""; return "<avoid_terms>\n"+es.map(function(e){ var s="  <avoid_term>\n    <term>"+t(e.avoid)+"</term>"; if(has(e.reason)) s+="\n    <reason>"+t(e.reason)+"</reason>"; return s+"\n  </avoid_term>"; }).join("\n")+"\n</avoid_terms>"; } }
       ]},
       { name:"Tone by Context", tag:"tone_by_context", questions:[
         { id:"Q15", n:"Q15", label:"How does your tone shift depending on the situation? Fill in the ones that are relevant to your brand.", type:"tonetable",
           rows:["Website homepage","Product or trip page","Email to existing customers","Paid advertising","Social media","Customer support","Press or thought leadership","Internal communications"],
-          help:"Tone can shift while voice stays consistent. E.g. social media might be warmer and shorter than a product page, but both should still sound like the same brand.",
+          help:"Tone can shift by context while the core voice stays consistent. Complete the rows that apply.",
           req:R.minRows(2),
           out:function(v){ var es=(v||[]).filter(function(r){return has(r.tone)||has(r.phrase);}); if(!es.length) return ""; return es.map(function(r){ var s="<tone>\n  <context>"+t(r.context)+"</context>"; if(has(r.tone)) s+="\n  <desired_tone>"+t(r.tone)+"</desired_tone>"; if(has(r.phrase)) s+="\n  <example_phrase>"+t(r.phrase)+"</example_phrase>"; return s+"\n</tone>"; }).join("\n"); } }
       ]},
@@ -823,7 +823,7 @@ var FILES = [
           out:function(v){ return has(v) ? "**English variant:** "+t(v) : ""; } },
         { id:"Q17", n:"Q17", label:"List any other formatting rules your AI outputs must follow consistently.", type:"repeat", max:10,
           fields:[{key:"rule",label:"Rule"},{key:"notes",label:"Notes",opt:true}],
-          help:"Only rules that genuinely matter: capitalisation preferences, how you write numbers, Oxford comma usage, headline casing, brand name on first vs subsequent mentions.",
+          help:"Add only rules that affect output: capitalisation, number formatting, Oxford comma usage, headline casing, and brand-name treatment on first versus subsequent mentions.",
           req:R.none(),
           out:function(v){ var b=filled(v,"rule").map(function(e){return bulletPair(e.rule,e.notes);});
             return b.length ? "**Formatting rules:**\n"+b.join("\n") : ""; } }
@@ -837,36 +837,36 @@ var FILES = [
     sections:[
       { name:"Core Audience", tag:"core_audience", questions:[
         { id:"Q18", n:"Q18", label:"Describe your primary customer in plain terms.", type:"textarea", size:"md",
-          help:'Don\'t start with demographics. Start with who they are as a person: mindset, life stage, what they care about. E.g. "Curious, well-traveled professionals in their 50s and 60s who value time and access over novelty."',
+          help:"Lead with mindset, life stage, and priorities before demographics. Example: \"Well-travelled professionals in their 50s and 60s who value time and access over novelty.\"",
           req:R.yes(),
           out:function(v){ return "**Who they are:** "+t(v); } },
         { id:"Q19", n:"Q19", label:"What does your primary customer actually want when they come to you?", type:"textarea", size:"md",
-          help:"Not what you sell them - the outcome, feeling, or result they are looking for. What does success look like for them after working with you?",
+          help:"The outcome or result the customer wants, not the product you sell. Define what success looks like for them.",
           req:R.yes(),
           out:function(v){ return "**What they want:** "+t(v); } },
         { id:"Q20", n:"Q20", label:"What motivates them to make a decision?", type:"textarea", size:"md",
-          help:"What tips them from considering to committing? A trigger event, social proof, a particular piece of information, a deadline? The more specific, the more useful.",
+          help:"The triggers that move them from considering to committing: a specific event, social proof, a key piece of information, or a deadline. Be specific.",
           req:R.yes(),
           out:function(v){ return "**What motivates decisions:** "+t(v); } },
         { id:"Q21", n:"Q21", label:"What are their top three objections or hesitations before buying?", type:"repeat", max:5,
           fields:[{key:"objection",label:"Objection or hesitation"}],
-          help:"What makes them pause? Price, trust, complexity, time? These need to be addressed directly in content. If your AI doesn't know what objections exist, it won't address them.",
+          help:"The objections that cause hesitation, such as price, trust, complexity, or time. Each should be addressed directly in content.",
           req:R.min(2,"objection"),
           out:function(v){ var b=filled(v,"objection").map(function(e){return "- "+t(e.objection);});
             return b.length ? "**Key objections:**\n"+b.join("\n") : ""; } },
         { id:"Q22", n:"Q22", label:"What does your customer read, watch, or listen to? Where do they go for information before making a decision like this?", type:"textarea", size:"md",
-          help:'This tells the AI how sophisticated and well-informed to assume the reader is. E.g. "They read the FT and Condé Nast Traveller…" This changes the tone and assumed knowledge level in every output.',
+          help:"The sources they rely on before deciding. This sets the assumed knowledge level and tone of every output. Example: \"The FT, Conde Nast Traveller, and specialist travel advisors.\"",
           req:R.rec(),
           out:function(v){ return has(v) ? "**Information sources and sophistication:** "+t(v) : ""; } },
         { id:"Q23", n:"Q23", label:"What language does your customer use when they talk about this problem or this type of product?", type:"textarea", size:"md",
-          help:'The exact words they use in searches, reviews, conversations - not your internal language. E.g. "They say private jet trip, not private jet expedition." Bridging this gap is one of the highest-value things the Brain does.',
+          help:"The exact words customers use in searches, reviews, and conversations, not internal terminology. Example: they say \"private jet trip,\" not \"private jet expedition.\"",
           req:R.yes(),
           out:function(v){ return "**Language they use:** "+t(v); } }
       ]},
       { name:"Audience Segments", tag:"audience_segments", questions:[
         { id:"Q24", n:"Q24", label:"Are there distinct customer segments that need different treatment from your content? If yes, describe up to three.", type:"repeat", max:3,
           fields:[{key:"name",label:"Segment name"},{key:"who",label:"Who they are"},{key:"need",label:"What they specifically need from content"}],
-          help:"E.g. first-time buyers vs returning customers, trade/B2B vs direct consumer, UK vs US. Only add a segment if the content or tone would genuinely differ.",
+          help:"Add a segment only when its content or tone would genuinely differ, for example first-time versus returning customers, trade versus direct, or UK versus US.",
           req:R.none(),
           out:function(v){ var es=filled(v,"name");
             if(!es.length) return "";
@@ -874,7 +874,7 @@ var FILES = [
               return "**"+t(e.name)+"**\nWho they are: "+t(e.who)+"\nWhat they need from content: "+t(e.need);
             }).join("\n\n"); } },
         { id:"Q25", n:"Q25", label:"Who is your product not for?", type:"textarea", size:"md",
-          help:'As important as who it is for. E.g. "Not for budget travellers, not for people who want fully independent itineraries, not for first-time international travellers."',
+          help:"Define who the product is not for. Example: \"Not for budget travellers or those wanting fully independent itineraries.\"",
           req:R.rec(),
           out:function(v){ return has(v) ? "**Not for:** "+t(v) : ""; } }
       ]}
@@ -888,25 +888,25 @@ var FILES = [
       { name:"Core Topics and Intent", tag:"core_topics", questions:[
         { id:"Q26", n:"Q26", label:"What are the five to ten most important topics your content needs to cover?", type:"repeat", max:10,
           fields:[{key:"topic",label:"Topic"},{key:"reason",label:"Why it matters",opt:true}],
-          help:'Think about what someone would ask an AI assistant or search when seriously considering your product. Category terms, not brand terms. E.g. "luxury private jet expeditions," "all-inclusive expedition travel."',
+          help:"Category-level topics customers search or ask AI about when considering your product, not brand terms. Example: \"all-inclusive expedition travel.\"",
           req:R.min(5,"topic"),
           out:function(v){ var b=filled(v,"topic").map(function(e){return bulletPair(e.topic,e.reason);});
             return b.length ? "**Core topics:**\n"+b.join("\n") : ""; } },
         { id:"Q27", n:"Q27", label:"What are the most common questions your customers ask before they buy?", type:"repeat", max:15,
           fields:[{key:"question",label:"Question (write as a real question)"}],
-          help:'Think support emails, sales calls, FAQ pages, live chat. Write them as real questions, not topics. E.g. "What is included in the price?" not "pricing."',
+          help:"Real pre-purchase questions from support emails, sales calls, FAQs, and chat logs. Phrase them as questions. Example: \"What is included in the price?\"",
           req:R.min(5,"question"),
           out:function(v){ var b=filled(v,"question").map(function(e){return "- "+t(e.question);});
             return b.length ? "**Pre-purchase questions:**\n"+b.join("\n") : ""; } },
         { id:"Q28", n:"Q28", label:"What questions do you wish customers would ask, because your answer would make you look great?", type:"repeat", max:10,
           fields:[{key:"question",label:"Question"}],
-          help:'The comparison questions, the "why not just do it yourself" questions, the value-for-money questions. Often the questions that best differentiate you.',
+          help:"Questions that showcase your strengths: comparisons, value-for-money, and \"why not do it yourself\" questions. These differentiate you.",
           req:R.min(2,"question"),
           out:function(v){ var b=filled(v,"question").map(function(e){return "- "+t(e.question);});
             return b.length ? "**Opportunity questions:**\n"+b.join("\n") : ""; } },
         { id:"Q29", n:"Q29", label:"What specific search terms or question formats do you want to be found for?", type:"repeat", max:20,
           fields:[{key:"term",label:"Term or question"},{key:"form",label:"Form",toggle:["Short-form","Long-form"]}],
-          help:'Include both short keywords ("private jet expedition") and longer natural-language queries. Both matter for GEO visibility.',
+          help:"Include both short keywords (\"private jet expedition\") and longer natural-language queries. Both affect search and AI visibility.",
           req:R.min(5,"term"),
           out:function(v){ var es=filled(v,"term");
             if(!es.length) return "";
@@ -918,13 +918,13 @@ var FILES = [
             return s; } },
         { id:"Q30", n:"Q30", label:"Are there topics, terms, or associations you do not want to be found for or associated with?", type:"repeat", max:10,
           fields:[{key:"term",label:"Topic or term"},{key:"reason",label:"Reason"}],
-          help:"Competitor terms you don't want to trigger, price brackets you don't occupy, categories that attract the wrong audience.",
+          help:"Terms and associations to avoid: competitor terms, price brackets you do not occupy, and categories that attract the wrong audience.",
           req:R.rec(),
           out:function(v){ var b=filled(v,"term").map(function(e){return bulletPair(e.term,e.reason);});
             return b.length ? "**Do not associate with:**\n"+b.join("\n") : ""; } },
         { id:"Q31", n:"Q31", label:"Do you have different keyword or topic priorities for different geographic markets?", type:"toggletext",
           revealLabel:"Describe the key differences",
-          help:"E.g. UK audiences use different search language than US audiences. Note the key differences so the AI writes and optimises appropriately for each.",
+          help:"Note key differences by market, such as UK versus US search language, so output is optimised for each.",
           req:R.none(),
           out:function(v){ v=v||{}; return (v.enabled && has(v.text)) ? "**Geographic market differences:**\n"+t(v.text) : ""; } }
       ]}
@@ -945,7 +945,7 @@ var FILES = [
             {key:"wrong",label:"Example of the wrong version",ta:true,must:true},
             {key:"right",label:"Example of the right version",ta:true,must:true}
           ],
-          help:"The wrong and right examples are non-negotiable - a rule with a concrete before/after teaches the AI to recognise the pattern, not just remember the instruction. A rule saves only once both examples are filled.",
+          help:"A wrong example and a right example are required for each rule. A concrete before/after teaches the AI to recognise the pattern, not just the instruction. The rule saves once both examples are complete.",
           req:R.complete(2,["wrong","right"]),
           out:function(v){ var es=(v||[]).filter(function(e){return has(e.wrong)&&has(e.right);});
             if(!es.length) return "";
@@ -958,7 +958,7 @@ var FILES = [
       { name:"Positioning Restrictions", tag:"positioning_restrictions", questions:[
         { id:"Q33", n:"Q33", label:"How should your brand never be positioned or described?", type:"repeat", max:8,
           fields:[{key:"statement",label:"Never position us as"},{key:"reason",label:"Reason"}],
-          help:'The categories, comparisons, or framings that are simply wrong. E.g. "Never position us as a budget option." "Never describe us as a tour operator."',
+          help:"Categories, comparisons, or framings that are incorrect. Examples: \"Never position us as a budget option.\" \"Never describe us as a tour operator.\"",
           req:R.min(2,"statement"),
           out:function(v){ var b=filled(v,"statement").map(function(e){return bulletPair(e.statement,e.reason);});
             return b.length ? "**Never position as:**\n"+b.join("\n") : ""; } }
@@ -966,7 +966,7 @@ var FILES = [
       { name:"Claims Restrictions", tag:"claims_restrictions", questions:[
         { id:"Q34", n:"Q34", label:"Are there claims your brand should never make, even if they seem positive?", type:"repeat", max:10,
           fields:[{key:"claim",label:"Never claim"},{key:"reason",label:"Why"}],
-          help:"Unverified superlatives, access claims that haven't been confirmed, safety or medical claims that need sign-off, pricing you never state publicly, comparisons you can't substantiate.",
+          help:"Claims to avoid even when positive: unverified superlatives, unconfirmed access claims, safety or medical claims requiring sign-off, undisclosed pricing, or unsubstantiated comparisons.",
           req:R.min(2,"claim"),
           out:function(v){ var b=filled(v,"claim").map(function(e){return bulletPair(e.claim,e.reason);});
             return b.length ? "**Never claim:**\n"+b.join("\n") : ""; } }
@@ -974,22 +974,22 @@ var FILES = [
       { name:"Content Restrictions", tag:"content_restrictions", questions:[
         { id:"Q35", n:"Q35", label:"Are there content types or formats your brand should never produce?", type:"repeat", max:8,
           fields:[{key:"type",label:"Never create"},{key:"reason",label:"Reason",opt:true}],
-          help:'E.g. "Never produce countdown urgency copy." "Never write simulated customer testimonials." "Never publish pricing without sign-off."',
+          help:"Content types or formats to never produce. Examples: \"Countdown urgency copy.\" \"Simulated customer testimonials.\" \"Pricing published without sign-off.\"",
           req:R.min(1,"type"),
           out:function(v){ var b=filled(v,"type").map(function(e){return bulletPair(e.type,e.reason);});
             return b.length ? "**Never create:**\n"+b.join("\n") : ""; } }
       ]},
       { name:"Audience Restrictions", tag:"audience_restrictions", questions:[
         { id:"Q36", n:"Q36", label:"Are there audience targeting approaches that are off-limits?", type:"textarea", size:"md",
-          help:"Segments you've decided not to pursue, demographics that would be inappropriate for your brand, contexts or placements where you don't want to appear.",
+          help:"Targeting approaches that are off-limits: segments you will not pursue, inappropriate demographics, or placements where the brand should not appear.",
           req:R.none(),
           out:function(v){ return has(v) ? "**Audience restrictions:** "+t(v) : ""; } }
       ]},
       { name:"AI Operating Instructions", tag:"ai_operating_instructions", questions:[
         { id:"Q37", n:"Q37", label:"What are the specific rules AI tools must follow when working for your brand?", type:"repeat", max:15,
           fields:[{key:"mode",label:"Mode",toggle:["Always","Never"]},{key:"instruction",label:"Instruction"}],
-          help:'Instructions written directly for AI tools. E.g. "Always ask for a destination name before writing trip copy." "Never invent product details - mark unknowns for review instead."',
-          nudge:"What went wrong with the last piece of AI content you had to rewrite? Add a rule here.",
+          help:"Direct instructions for AI tools. Examples: \"Always confirm the destination before writing trip copy.\" \"Never invent product details; mark unknowns for review.\"",
+          nudge:"Think of the last AI-generated piece you had to rewrite. Add a rule that would have prevented it.",
           req:R.min(3,"instruction"),
           out:function(v){ var es=filled(v,"instruction");
             if(!es.length) return "";
