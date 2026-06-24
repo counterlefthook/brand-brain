@@ -824,18 +824,7 @@ var FILES = [
           req:R.minRows(2),
           out:function(v){ var es=(v||[]).filter(function(r){return has(r.tone)||has(r.phrase);}); if(!es.length) return ""; return es.map(function(r){ var s="<tone>\n  <context>"+t(r.context)+"</context>"; if(has(r.tone)) s+="\n  <desired_tone>"+t(r.tone)+"</desired_tone>"; if(has(r.phrase)) s+="\n  <example_phrase>"+t(r.phrase)+"</example_phrase>"; return s+"\n</tone>"; }).join("\n"); } }
       ]},
-      { name:"Formatting Rules", tag:"formatting_rules", questions:[
-        { id:"Q16", n:"Q16", label:"Do you use UK English or US English?", type:"select",
-          options:["UK English","US English","Both, specify by market"],
-          req:R.yes(),
-          out:function(v){ return has(v) ? "**English variant:** "+t(v) : ""; } },
-        { id:"Q17", n:"Q17", label:"List any other formatting rules your AI outputs must follow consistently.", type:"repeat", max:10,
-          fields:[{key:"rule",label:"Rule"},{key:"notes",label:"Notes",opt:true}],
-          help:"Add only rules that affect output: capitalisation, number formatting, Oxford comma usage, headline casing, and brand-name treatment on first versus subsequent mentions.",
-          req:R.none(),
-          out:function(v){ var b=filled(v,"rule").map(function(e){return bulletPair(e.rule,e.notes);});
-            return b.length ? "**Formatting rules:**\n"+b.join("\n") : ""; } }
-      ]},
+      
       { name:"Visual Identity", tag:"visual_identity", questions:[
         { id:"Q39", n:"Q39", label:"What typefaces does your brand use?", type:"repeat", max:6,
           fields:[{key:"role",label:"Where it's used",ph:"e.g. Headings, Body, Accent"},{key:"family",label:"Typeface / font family"},{key:"notes",label:"Weights or usage notes",opt:true}],
@@ -884,10 +873,7 @@ var FILES = [
           req:R.min(2,"objection"),
           out:function(v){ var b=filled(v,"objection").map(function(e){return "- "+t(e.objection);});
             return b.length ? "**Key objections:**\n"+b.join("\n") : ""; } },
-        { id:"Q22", n:"Q22", label:"What does your customer read, watch, or listen to? Where do they go for information before making a decision like this?", type:"textarea", size:"md",
-          help:"The sources they rely on before deciding. This sets the assumed knowledge level and tone of every output. Example: \"The FT, Conde Nast Traveller, and specialist travel advisors.\"",
-          req:R.rec(),
-          out:function(v){ return has(v) ? "**Information sources and sophistication:** "+t(v) : ""; } },
+        
         { id:"Q23", n:"Q23", label:"What language does your customer use when they talk about this problem or this type of product?", type:"textarea", size:"md",
           help:"The exact words customers use in searches, reviews, and conversations, not internal terminology. Example: they say \"private jet trip,\" not \"private jet expedition.\"",
           req:R.yes(),
@@ -922,30 +908,9 @@ var FILES = [
           req:R.min(5,"topic"),
           out:function(v){ var b=filled(v,"topic").map(function(e){return bulletPair(e.topic,e.reason);});
             return b.length ? "**Core topics:**\n"+b.join("\n") : ""; } },
-        { id:"Q27", n:"Q27", label:"What are the most common questions your customers ask before they buy?", type:"repeat", max:15,
-          fields:[{key:"question",label:"Question (write as a real question)"}],
-          help:"Real pre-purchase questions from support emails, sales calls, FAQs, and chat logs. Phrase them as questions. Example: \"What is included in the price?\"",
-          req:R.min(5,"question"),
-          out:function(v){ var b=filled(v,"question").map(function(e){return "- "+t(e.question);});
-            return b.length ? "**Pre-purchase questions:**\n"+b.join("\n") : ""; } },
-        { id:"Q28", n:"Q28", label:"What questions do you wish customers would ask, because your answer would make you look great?", type:"repeat", max:10,
-          fields:[{key:"question",label:"Question"}],
-          help:"Questions that showcase your strengths: comparisons, value-for-money, and \"why not do it yourself\" questions. These differentiate you.",
-          req:R.min(2,"question"),
-          out:function(v){ var b=filled(v,"question").map(function(e){return "- "+t(e.question);});
-            return b.length ? "**Opportunity questions:**\n"+b.join("\n") : ""; } },
-        { id:"Q29", n:"Q29", label:"What specific search terms or question formats do you want to be found for?", type:"repeat", max:20,
-          fields:[{key:"term",label:"Term or question"},{key:"form",label:"Form",toggle:["Short-form","Long-form"]}],
-          help:"Include both short keywords (\"private jet expedition\") and longer natural-language queries. Both affect search and AI visibility.",
-          req:R.min(5,"term"),
-          out:function(v){ var es=filled(v,"term");
-            if(!es.length) return "";
-            var sh=es.filter(function(e){return (e.form||"Short-form")==="Short-form";});
-            var lo=es.filter(function(e){return e.form==="Long-form";});
-            var s="**Target search terms:**";
-            if(sh.length) s+="\n\nShort-form:\n"+sh.map(function(e){return "- "+t(e.term);}).join("\n");
-            if(lo.length) s+="\n\nLong-form queries:\n"+lo.map(function(e){return "- "+t(e.term);}).join("\n");
-            return s; } },
+        
+        
+        
         { id:"Q30", n:"Q30", label:"Are there topics, terms, or associations you do not want to be found for or associated with?", type:"repeat", max:10,
           fields:[{key:"term",label:"Topic or term"},{key:"reason",label:"Reason"}],
           help:"Terms and associations to avoid: competitor terms, price brackets you do not occupy, and categories that attract the wrong audience.",
