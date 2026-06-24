@@ -760,7 +760,7 @@ var FILES = [
       { name:"What We Are Not", tag:"what_we_are_not", questions:[
         { id:"Q8", n:"Q8", label:'Complete the sentence: "We are NOT…" Add up to five.', type:"repeat", max:5,
           fields:[{key:"statement",label:"We are not…"},{key:"reason",label:"Why this matters to state",opt:true}],
-          help:"Categories, comparisons, or misperceptions to rule out. Examples: \"We are not a budget option.\" \"We are not a tech company that happens to do travel.\"",
+          help:"Categories, comparisons, or misperceptions to rule out. Example: \"We are not a budget option.\"",
           req:R.min(2,"statement"),
           out:function(v){ var b=filled(v,"statement").map(function(e){return bulletPair(e.statement,e.reason);});
             return b.length ? "**We are NOT:**\n"+b.join("\n") : ""; } }
