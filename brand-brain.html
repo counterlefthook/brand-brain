@@ -449,8 +449,7 @@ var FILES = [
           fields:[{key:"name",label:"Product or service name"},{key:"desc",label:"One-sentence description"},{key:"benefit",label:"The single biggest benefit to the customer"}],
           help:"Focus on what the customer gets, not how you deliver it.",
           req:R.min(1,"name"),
-          out:function(v){ var rows=filled(v,"name").map(function(e){return [t(e.name),t(e.desc),t(e.benefit)];});
-            return mdTable(["Product/Service","Description","Key benefit"],rows); } }
+          out:function(v){ return filled(v,"name").map(function(e){ var s="<product>\n  <name>"+t(e.name)+"</name>"; if(has(e.desc)) s+="\n  <description>"+t(e.desc)+"</description>"; if(has(e.benefit)) s+="\n  <key_benefit>"+t(e.benefit)+"</key_benefit>"; return s+"\n</product>"; }).join("\n"); } }
       ]},
       { name:"Competitive Positioning", tag:"competitive_positioning", questions:[
         { id:"Q5", n:"Q5", label:"Why do customers choose you over the alternatives?", type:"textarea", size:"md",
@@ -469,8 +468,7 @@ var FILES = [
           fields:[{key:"name",label:"Competitor name"},{key:"strength",label:"Their main strength"},{key:"adv",label:"Your advantage against them"}],
           help:"Be honest about their strengths. The Brain is more useful when it understands the real competitive landscape, not a flattering version of it.",
           req:R.min(1,"name"),
-          out:function(v){ var rows=filled(v,"name").map(function(e){return [t(e.name),t(e.strength),t(e.adv)];});
-            return mdTable(["Competitor","Their strength","Our advantage"],rows); } }
+          out:function(v){ return filled(v,"name").map(function(e){ var s="<competitor>\n  <name>"+t(e.name)+"</name>"; if(has(e.strength)) s+="\n  <their_strength>"+t(e.strength)+"</their_strength>"; if(has(e.adv)) s+="\n  <our_advantage>"+t(e.adv)+"</our_advantage>"; return s+"\n</competitor>"; }).join("\n"); } }
       ]},
       { name:"What We Are Not", tag:"what_we_are_not", questions:[
         { id:"Q8", n:"Q8", label:'Complete the sentence: "We are NOT…" Add up to five.', type:"repeat", max:5,
@@ -517,23 +515,19 @@ var FILES = [
           fields:[{key:"term",label:"Use this term"},{key:"instead",label:"Instead of",opt:true}],
           help:'Product names, category terms, preferred descriptions. E.g. "We always say expedition, not tour." Include the preferred term and, if useful, what it replaces.',
           req:R.min(3,"term"),
-          out:function(v){ var rows=filled(v,"term").map(function(e){return [t(e.term),t(e.instead)];});
-            return rows.length ? "**Always use:**\n"+mdTable(["Use","Instead of"],rows) : ""; } },
+          out:function(v){ var es=filled(v,"term"); if(!es.length) return ""; return "<preferred_terms>\n"+es.map(function(e){ var s="  <preferred_term>\n    <use>"+t(e.term)+"</use>"; if(has(e.instead)) s+="\n    <instead_of>"+t(e.instead)+"</instead_of>"; return s+"\n  </preferred_term>"; }).join("\n")+"\n</preferred_terms>"; } },
         { id:"Q14", n:"Q14", label:"List words and phrases your brand actively avoids.", type:"repeat", max:20,
           fields:[{key:"avoid",label:"Avoid this term"},{key:"reason",label:"Reason",opt:true}],
           help:"Overused industry words, competitor language, terms that feel off-brand. Add a reason for any that aren't obvious, so the AI understands the principle, not just the rule.",
           req:R.min(3,"avoid"),
-          out:function(v){ var rows=filled(v,"avoid").map(function(e){return [t(e.avoid),t(e.reason)];});
-            return rows.length ? "**Never use:**\n"+mdTable(["Avoid","Reason"],rows) : ""; } }
+          out:function(v){ var es=filled(v,"avoid"); if(!es.length) return ""; return "<avoid_terms>\n"+es.map(function(e){ var s="  <avoid_term>\n    <term>"+t(e.avoid)+"</term>"; if(has(e.reason)) s+="\n    <reason>"+t(e.reason)+"</reason>"; return s+"\n  </avoid_term>"; }).join("\n")+"\n</avoid_terms>"; } }
       ]},
       { name:"Tone by Context", tag:"tone_by_context", questions:[
         { id:"Q15", n:"Q15", label:"How does your tone shift depending on the situation? Fill in the ones that are relevant to your brand.", type:"tonetable",
           rows:["Website homepage","Product or trip page","Email to existing customers","Paid advertising","Social media","Customer support","Press or thought leadership","Internal communications"],
           help:"Tone can shift while voice stays consistent. E.g. social media might be warmer and shorter than a product page, but both should still sound like the same brand.",
           req:R.minRows(2),
-          out:function(v){ var rows=(v||[]).filter(function(r){return has(r.tone)||has(r.phrase);})
-              .map(function(r){return [t(r.context),t(r.tone),t(r.phrase)];});
-            return mdTable(["Context","Desired tone","One example phrase"],rows); } }
+          out:function(v){ var es=(v||[]).filter(function(r){return has(r.tone)||has(r.phrase);}); if(!es.length) return ""; return es.map(function(r){ var s="<tone>\n  <context>"+t(r.context)+"</context>"; if(has(r.tone)) s+="\n  <desired_tone>"+t(r.tone)+"</desired_tone>"; if(has(r.phrase)) s+="\n  <example_phrase>"+t(r.phrase)+"</example_phrase>"; return s+"\n</tone>"; }).join("\n"); } }
       ]},
       { name:"Formatting Rules", tag:"formatting_rules", questions:[
         { id:"Q16", n:"Q16", label:"Do you use UK English or US English?", type:"select",
