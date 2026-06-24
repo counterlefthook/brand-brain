@@ -3,9 +3,5 @@
   "framework": null,
   "installCommand": "echo \"skip install (static site)\"",
   "buildCommand": "echo \"no build (static site)\"",
-  "outputDirectory": ".",
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/", "destination": "/brand-brain.html" }
-  ]
+  "outputDirectory": "."
 }
