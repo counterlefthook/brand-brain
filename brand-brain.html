@@ -376,6 +376,26 @@ pre.mono-box{font-family:var(--mono);font-size:12.5px;line-height:1.65;white-spa
 .wi-panel{display:none;animation:sgFade .3s both}
 .wi-panel.active{display:block}
 @media(prefers-reduced-motion:reduce){.wi-panel{animation:none}}
+
+/* What is a Brand Brain - rich content */
+.wi-cols-2{grid-template-columns:1fr 1fr}
+.wi-pill{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--blue);background:var(--blue-50);border-radius:var(--pill);padding:3px 10px;margin-bottom:8px}
+.wi-table{width:100%;border-collapse:collapse;margin-top:4px;font-size:13.5px}
+.wi-table th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;padding:8px 12px;border-bottom:2px solid var(--coral)}
+.wi-table td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.wi-table td:first-child{color:var(--muted);width:36%}
+.wi-table td:last-child{color:var(--ink);font-weight:600}
+.wi-table tr:nth-child(even) td{background:var(--surface-2)}
+.wi-mono{font-family:var(--mono);font-size:12.5px;line-height:1.6;white-space:pre-wrap;word-break:break-word;background:var(--surface-2);border-left:3px solid var(--blue);border-radius:var(--radius-sm);padding:14px 16px;color:var(--ink);overflow-x:auto}
+.wi-chat{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:10px}
+.wi-loaded{align-self:flex-start;font-size:12px;color:var(--ink-soft);background:var(--surface);border:1px solid var(--line);border-radius:var(--pill);padding:5px 12px}
+.wi-loaded b{color:var(--teal);font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.05em;margin-right:6px}
+.wi-bubble{max-width:82%;padding:10px 14px;border-radius:14px;font-size:13.5px;line-height:1.5}
+.wi-bubble-user{align-self:flex-end;background:var(--blue);color:#fff;border-bottom-right-radius:4px}
+.wi-bubble-ai{align-self:flex-start;background:var(--surface);border:1px solid var(--line);color:var(--ink);border-bottom-left-radius:4px}
+.wi-opts{margin:8px 0 0;padding-left:20px}
+.wi-opts li{margin:3px 0}
+.wi-foot{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:11px;letter-spacing:.04em;color:var(--faint);font-weight:600}
 </style>
 </head>
 <body>
@@ -429,58 +449,104 @@ pre.mono-box{font-family:var(--mono);font-size:12.5px;line-height:1.65;white-spa
       </nav>
 
       <div class="wi-panel active" id="wi-what">
-        <div class="intro-note"><p><strong>The Brand Brain is your brand's official context, in one place.</strong> Every time someone on your team uses AI, it needs to understand who we are. Without a shared source of truth, every person recreates that context differently. The Brand Brain solves that with a single, maintained set of files everyone points to.</p></div>
+        <div class="intro-note"><p><strong>The Brand Brain is your brand's official context, in one place.</strong> Every time someone on your team uses AI, it needs to understand who we are. Without a shared source of truth, every person recreates that context differently. The Brand Brain solves that with a single, maintained file everyone points to.</p></div>
         <div class="wi-eyebrow2">The core idea</div>
         <div class="wi-cols">
           <div class="wi-card"><div class="wi-card-t">Without it</div><p>Each person writes their own context prompt. Inconsistent, inefficient, and off-brand more often than not.</p></div>
-          <div class="wi-card wi-card-hl"><div class="wi-card-t">With a Brand Brain</div><p>One official set of context files. Everyone points to it. The AI always starts from the same foundation.</p></div>
+          <div class="wi-card wi-card-hl"><div class="wi-card-t">With a Brand Brain</div><p>One official context file. Everyone points to it. The AI always starts from the same foundation.</p></div>
           <div class="wi-card"><div class="wi-card-t">The result</div><p>Consistent AI output. Faster workflows. "On-brand" by default, every time.</p></div>
         </div>
+        <div class="wi-eyebrow2">What it is not</div>
+        <table class="wi-table"><thead><tr><th>Misconception</th><th>Reality</th></tr></thead><tbody>
+          <tr><td>A complex AI system</td><td>Just a text file. No special software required.</td></tr>
+          <tr><td>Permanent AI training</td><td>Read fresh at the start of each session, not baked into the model.</td></tr>
+          <tr><td>A one-time setup</td><td>A living document, maintained and updated as the brand evolves.</td></tr>
+          <tr><td>Each person's responsibility</td><td>Owned centrally by the brand or CoE, referenced by everyone.</td></tr>
+        </tbody></table>
       </div>
 
       <div class="wi-panel" id="wi-inside">
-        <p class="wi-body">Five Markdown files, each wrapped in semantic tags so an AI can locate and apply the right context without reading the whole document:</p>
+        <div class="intro-note"><p><strong>A simple text file that lives in a shared folder.</strong> The sections cover who our brand is and how we communicate. Any AI you use reads the Brand Brain context at the start of each session. The more complete and accurate the file, the better the AI will represent your brand.</p></div>
+        <div class="wi-eyebrow2">Sections in the Brand Brain</div>
         <div class="wi-files">
-          <div class="wi-file"><div class="wi-file-n">brand-profile</div><p>Who you are, what you sell, your positioning, your competitors, and what you're not.</p></div>
-          <div class="wi-file"><div class="wi-file-n">style-guide</div><p>Voice, tone, terminology, and formatting: the rules that make output sound like you.</p></div>
-          <div class="wi-file"><div class="wi-file-n">audience</div><p>Who you're for, what they actually want, their objections, and the language they use.</p></div>
-          <div class="wi-file"><div class="wi-file-n">keyword-map</div><p>The topics, questions, and search terms you want to be found for.</p></div>
-          <div class="wi-file"><div class="wi-file-n">never-do</div><p>The hard rules: banned claims, off-limits positioning, and AI operating instructions.</p></div>
+          <div class="wi-file"><span class="wi-pill">Brand profile</span><p>Who you are, what you do, your mission, your audience, your positioning. The "elevator pitch" the AI reads before it speaks as you.</p></div>
+          <div class="wi-file"><span class="wi-pill">Competitors</span><p>Who you compete with, how you differ, what sets you apart. Prevents the AI from positioning you like a rival or missing your key differentiators.</p></div>
+          <div class="wi-file"><span class="wi-pill">Style guide / RTBs</span><p>Voice, tone, reasons to believe, key messages. The rules that make output sound like your brand, not a generic AI response.</p></div>
+          <div class="wi-file"><span class="wi-pill">Do's and don'ts</span><p>Decisions already made. What to say and what to avoid. Off-brand phrases. Guardrails that protect the brand in every AI output.</p></div>
         </div>
-        <p class="wi-body" style="margin-top:16px"><strong>One Brand Brain, many components.</strong> A brand can have as many components as it needs, creative, sales, SEO, acquisition, and more. Anything that needs to stay consistent and is regularly fed to AI as context belongs in the Brain.</p>
+        <div class="wi-eyebrow2">What a section looks like (example)</div>
+        <div class="wi-mono">## Brand voice - Exodus Adventure Travels
+We are expert, warm and grounded. We've led small-group adventures
+for 50 years and it shows. We speak to active, curious travellers
+who want to see a place properly - on foot, by bike, with a local
+leader who knows it inside out.
+
+## Do not say
+- "Bucket list" - undermines the depth of our trips
+- "Tailor-made" - we run expertly-planned group adventures
+- "World-class" - vague; show it, don't claim it
+- Any "#1" claim without a source</div>
       </div>
 
       <div class="wi-panel" id="wi-where">
-        <p class="wi-body">The files live in one shared location anyone on the team can access. Each brand has its own set of files, and everyone links to the same source.</p>
+        <div class="intro-note"><p><strong>The files live in a shared location anyone on the team can access.</strong> One central location. Each brand has its own set of files. The team links to them, agents are trained on them, and when the files are updated, everyone benefits automatically, no re-briefing required.</p></div>
+        <div class="wi-eyebrow2">Where to store it</div>
         <div class="wi-cols">
           <div class="wi-card"><div class="wi-card-t">Google Drive / SharePoint</div><p>Copy and paste into a prompt, or link it. Most common for day-to-day team use.</p></div>
           <div class="wi-card"><div class="wi-card-t">Agent knowledge base</div><p>Upload once. The agent reads it automatically on every conversation.</p></div>
           <div class="wi-card"><div class="wi-card-t">GitHub</div><p>Version-controlled. Track changes and keep an audit trail for brand decisions.</p></div>
         </div>
+        <div class="wi-eyebrow2">Suggested folder structure, one brand (Le Boat)</div>
+        <div class="wi-mono">/brand-brain/
+    leboat brand profile.md
+    leboat styleguide.md
+    leboat competitors.md
+    leboat rtbs.md
+    leboat never do's.md</div>
+        <div class="intro-note" style="margin-top:18px"><p><strong>One Brand Brain, many components.</strong> Each brand can have as many components as it needs, creative, sales, SEO, acquisition, and more. Anything that needs to stay consistent and is regularly added as AI context should be captured and standardised in the Brand Brain.</p></div>
       </div>
 
       <div class="wi-panel" id="wi-use">
-        <p class="wi-body">Two ways to use it: day-to-day prompting and agent builds.</p>
-        <div class="setup-prompt">
-          <div class="sp-label">Day-to-day: the one-line start prompt</div>
-          <code id="wiUsePromptText">Before we begin, please read this context about our brand and follow it in everything you write: [paste or link the files].</code>
-          <button class="btn btn-ghost btn-sm wi-copy" data-copy="wiUsePromptText">Copy</button>
+        <div class="intro-note"><p><strong>Two ways to use it, day-to-day prompting and agent builds.</strong> The least efficient is to paste the context into a new prompt; the more efficient is to link your prompt to the shared file, so it always reads the latest version.</p></div>
+
+        <div class="wi-eyebrow2">Day-to-day: how a session starts</div>
+        <div class="wi-chat">
+          <div class="wi-loaded"><b>Brain loaded</b> Exodus Adventure Travel brand brain - v2.4 - updated June 2026</div>
+          <div class="wi-bubble wi-bubble-user">Before we start, please read the brand context here: [link to brand brain file]</div>
+          <div class="wi-bubble wi-bubble-ai">Understood. I've read the Exodus Adventure Travel brand brain. I have your positioning, voice guidelines, competitor context, and do/don't list. What would you like to work on?</div>
+          <div class="wi-bubble wi-bubble-user">Write three subject lines for our August email about Morocco departures.</div>
+          <div class="wi-bubble wi-bubble-ai">Three options, staying in your direct, expert voice, no "bucket list" language:
+            <ol class="wi-opts"><li>Morocco in August: what to expect on the ground</li><li>Eight departures left, our August Morocco programmes</li><li>Go with a guide who's done it 40 times</li></ol>
+          </div>
         </div>
+        <div class="wi-mono" style="margin-top:14px"><span id="wiUsePromptText">"Before we begin, please read this context about our brand: [paste or link the file]"</span>
+
+Then ask your actual question. That's the entire workflow.</div>
+        <div style="margin-top:10px"><button class="btn btn-ghost btn-sm wi-copy" data-copy="wiUsePromptText">Copy prompt</button></div>
+
         <div class="wi-eyebrow2">Building an agent</div>
         <ol class="setup-steps">
-          <li><span class="ss-n">1</span><div><strong>Upload the files to the agent's knowledge base.</strong> Done once. The agent reads them on every conversation from that point on, no manual pasting required.</div></li>
-          <li><span class="ss-n">2</span><div><strong>Add a system instruction that references them.</strong> "You are an assistant for [Brand]. Always reference the brand context in your knowledge base before responding."</div></li>
+          <li><span class="ss-n">1</span><div><strong>Upload the file to the agent's knowledge base.</strong> Done once. The agent reads it on every conversation from that point on, no manual pasting required.</div></li>
+          <li><span class="ss-n">2</span><div><strong>Add a system instruction that references it.</strong> "You are an assistant for [Brand]. Always reference the brand context document in your knowledge base before responding."</div></li>
         </ol>
         <p class="wi-next">For the full walkthrough, see <button class="wi-link" data-goto="setup">Set it up</button>.</p>
-      </div>
 
-      <div class="wi-panel" id="wi-why">
-        <div class="wi-eyebrow2">Same brief, different result</div>
+        <div class="wi-eyebrow2">Output quality: same brief, different result</div>
         <div class="wi-ba">
           <div class="wi-ba-col wi-ba-bad"><div class="wi-ba-l">Without a Brand Brain</div><p class="wi-ba-q">"We are a premium adventure travel company that offers tailor-made, world-class experiences to discerning bucket-list travellers seeking unforgettable journeys..."</p><div class="wi-ba-note">Generic. Off-voice. Uses three phrases we explicitly banned.</div></div>
           <div class="wi-ba-col wi-ba-good"><div class="wi-ba-l">With a Brand Brain</div><p class="wi-ba-q">"Exodus runs small-group trips that go deeper than the itinerary. Our guides aren't just local, they're specialists. We work with people who've already seen the highlights and want to understand the place."</p><div class="wi-ba-note">On-brand. On-voice. No banned phrases.</div></div>
         </div>
-        <div class="intro-note" style="margin-top:22px"><p><strong>Your Brand Brain becomes your institutional memory.</strong> As AI becomes a standard tool across our teams, it's the memory your AI operates from. Instead of each person training the AI through trial and error, you build that knowledge once, maintain it centrally, and everyone benefits.</p></div>
+      </div>
+
+      <div class="wi-panel" id="wi-why">
+        <div class="intro-note"><p><strong>Two problems solved: consistency and efficiency.</strong> Right now, every person who uses AI starts from a different place. The Brand Brain makes the starting line the same for everyone, and gets them to the actual work faster.</p></div>
+        <div class="wi-cols wi-cols-2">
+          <div class="wi-card"><div class="wi-card-t">Consistency</div><p>Without consistent, shared context, one person's prompt may cover tone, while another's covers competitors, while another covers neither, and the AI gives three versions of your brand. With a Brand Brain, the AI's understanding is identical across every session and every user, because they're all reading the same file.</p></div>
+          <div class="wi-card"><div class="wi-card-t">Efficiency</div><p>You stop writing setup paragraphs before every prompt. You stop correcting the AI when it uses the wrong tone or off-limits phrasing. You point to the file, then ask your question. The context work is done once, centrally, by the people who know the brand best.</p></div>
+        </div>
+        <div class="wi-eyebrow2">The bigger picture</div>
+        <div class="intro-note"><p><strong>Your Brand Brain becomes your institutional memory.</strong> As AI becomes a standard tool across our teams, it's the memory your AI operates from. Instead of each person training the AI through trial and error, you build that knowledge once, maintain it centrally, and everyone benefits.</p><p>For a portfolio like Travelopia, this compounds. Each of our brands has its own positioning, competitors, and guardrails, and the Brand Brain is what keeps each of them sounding like themselves, even as the AI tooling and the people using it change over time.</p></div>
+        <div class="wi-foot"><span>Travelopia · Digital Media CoE · AI Frameworks</span><span>Brand Brain v1.0 · June 2026</span></div>
       </div>
     </div>
   </section>
