@@ -288,6 +288,70 @@ pre.mono-box{font-family:var(--mono);font-size:12.5px;line-height:1.65;white-spa
 #explainerView{width:100%}
 #explainerFrame{display:block;width:100%;height:calc(100vh - 66px);border:0;background:#fff}
 @media(max-width:880px){.view-tabs{margin-left:0;order:3;width:100%;justify-content:center}#explainerFrame{height:calc(100vh - 132px)}}
+/* ---- Set it up view ---- */
+#setupView{max-width:900px;margin:0 auto;padding:30px 28px 90px;width:100%}
+.setup-h1{font-family:var(--serif);font-size:31px;font-weight:700;line-height:1.12;letter-spacing:-.005em;margin:11px 0 10px}
+.setup-lead{color:var(--ink-soft);font-size:16px;max-width:64ch;margin:0 0 26px}
+.setup-graphic{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px 22px;box-shadow:var(--shadow-sm);margin-bottom:30px}
+.setup-graphic svg{width:100%;height:auto;display:block}
+.setup-steps{list-style:none;margin:0 0 26px;padding:0;display:grid;gap:15px}
+.setup-steps li{display:flex;gap:14px;align-items:flex-start;font-size:15px;color:var(--ink-soft)}
+.setup-steps li strong{color:var(--ink)}
+.ss-n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;font-family:var(--serif);font-weight:700;display:grid;place-items:center;font-size:15px}
+.setup-steps code,.setup-prompt code{background:var(--surface-2);border-radius:5px;padding:1px 6px;font-family:var(--mono);font-size:.9em}
+.setup-prompt{background:var(--blue-50);border:1px solid var(--blue-100);border-radius:var(--radius);padding:15px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:24px}
+.sp-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--blue);width:100%}
+.setup-prompt code{flex:1;min-width:240px;background:none;padding:0;color:var(--ink);line-height:1.5}
+.setup-prompt .btn{flex:none}
+.setup-tip{color:var(--ink-soft);font-size:14.5px;border-left:3px solid var(--coral);padding-left:14px;max-width:64ch}
+
+/* storyboard graphic */
+.sg-panel{fill:var(--surface-2);stroke:var(--line)}
+.sg-folder{fill:var(--blue)}
+.sg-folder-d{fill:var(--blue-700)}
+.sg-badge{fill:var(--ink)}
+.sg-num{fill:#fff;font:700 12px var(--sans)}
+.sg-cap{fill:var(--ink-soft);font:700 12.5px var(--sans)}
+.sg-accent{fill:var(--coral)}
+.sg-plus{stroke:#fff;stroke-width:2.4;stroke-linecap:round}
+.sg-chev{fill:none;stroke:var(--coral);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.sg-file{fill:#fff;stroke:var(--line-strong);stroke-width:1.2}
+.sg-fold{fill:none;stroke:var(--line-strong);stroke-width:1.2}
+.sg-line{fill:var(--line-strong)}
+.sg-md{fill:var(--coral);font:700 6.5px var(--mono)}
+.sg-cursor{fill:var(--ink);stroke:#fff;stroke-width:1.4;stroke-linejoin:round}
+.sg-ripple{fill:none;stroke:var(--teal);stroke-width:2.4;opacity:0}
+.sg-ava{fill:var(--teal)}
+.sg-avah{fill:#fff}
+.sg-share{stroke:var(--coral);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+
+/* gentle, purposeful play on tab open (not an idle loop) */
+.setup-graphic .step{opacity:1}
+.setup-graphic.play .s1{animation:sgFade .45s both}
+.setup-graphic.play .s2{animation:sgFade .45s .18s both}
+.setup-graphic.play .s3{animation:sgFade .45s .36s both}
+.setup-graphic.play .s4{animation:sgFade .45s .54s both}
+.setup-graphic.play .sgfile{opacity:0}
+.setup-graphic.play .f1{animation:sgDrop .5s .55s both}
+.setup-graphic.play .f2{animation:sgDrop .5s .67s both}
+.setup-graphic.play .f3{animation:sgDrop .5s .79s both}
+.sgcursor{transform-box:fill-box;transform-origin:center}
+.setup-graphic.play .sgcursor{animation:sgClick .7s .28s both}
+.setup-graphic.play .sgripple{animation:sgRipple .8s .34s both}
+.setup-graphic.play .sgava{opacity:0;transform-box:fill-box;transform-origin:center}
+.setup-graphic.play .a1{animation:sgPopAva .5s .7s both}
+.setup-graphic.play .a2{animation:sgPopAva .5s .82s both}
+@keyframes sgFade{from{opacity:0}to{opacity:1}}
+@keyframes sgDrop{0%{opacity:0;transform:translateY(-20px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes sgClick{0%,100%{transform:scale(1)}45%{transform:scale(.82)}}
+@keyframes sgRipple{0%{opacity:.7;transform:scale(.4);transform-box:fill-box;transform-origin:center}100%{opacity:0;transform:scale(1.25)}}
+@keyframes sgPopAva{0%{opacity:0;transform:scale(.5)}100%{opacity:1;transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){
+  .setup-graphic.play .step,.setup-graphic.play .sgfile,.setup-graphic.play .sgcursor,.setup-graphic.play .sgripple,.setup-graphic.play .sgava{animation:none!important;opacity:1!important;transform:none!important}
+  .setup-graphic.play .sgripple{opacity:0!important}
+}
+@media(max-width:880px){#setupView{padding:24px 20px 80px}.setup-h1{font-size:26px}}
+
 </style>
 </head>
 <body>
@@ -300,6 +364,7 @@ pre.mono-box{font-family:var(--mono);font-size:12.5px;line-height:1.65;white-spa
     </div>
     <nav class="view-tabs" aria-label="View">
       <button class="view-tab active" data-view="builder">Builder</button>
+      <button class="view-tab" data-view="setup">Set it up</button>
       <button class="view-tab" data-view="explainer">What is a Brand Brain?</button>
     </nav>
     <div class="top-actions">
@@ -328,6 +393,88 @@ pre.mono-box{font-family:var(--mono);font-size:12.5px;line-height:1.65;white-spa
   <section id="explainerView" hidden>
     <iframe id="explainerFrame" title="What is a Brand Brain?"></iframe>
   </section>
+
+  <section id="setupView" hidden>
+    <div class="setup-wrap">
+      <div class="file-eyebrow">Next steps</div>
+      <h1 class="setup-h1">You've exported your files — now give your Brand Brain a home</h1>
+      <p class="setup-lead">Your Brand Brain is five Markdown files. To make it your team's single source of truth, store it where everyone can reach it and point every AI tool at it before writing.</p>
+
+      <div class="setup-graphic" id="setupGraphic" role="img" aria-label="Four steps: create a folder, open it, add the five files, share it with your team.">
+        <svg viewBox="0 0 860 200" xmlns="http://www.w3.org/2000/svg">
+          <!-- chevrons between steps -->
+          <path class="sg-chev" d="M205 82 l9 9 l-9 9"/>
+          <path class="sg-chev" d="M421 82 l9 9 l-9 9"/>
+          <path class="sg-chev" d="M637 82 l9 9 l-9 9"/>
+
+          <!-- STEP 1 — create folder -->
+          <g class="step s1" transform="translate(6,0)">
+            <rect class="sg-panel" x="0" y="4" width="182" height="150" rx="14"/>
+            <circle class="sg-badge" cx="26" cy="30" r="12"/><text class="sg-num" x="26" y="34" text-anchor="middle">1</text>
+            <path class="sg-folder-d" d="M55 52a7 7 0 0 1 7-7h17a7 7 0 0 1 5 2l5 6h38a8 8 0 0 1 8 8v33a8 8 0 0 1-8 8H62a7 7 0 0 1-7-7z"/>
+            <path class="sg-folder" d="M51 66a6 6 0 0 1 6-6h70a6 6 0 0 1 6 6v24a8 8 0 0 1-8 8H59a8 8 0 0 1-8-8z"/>
+            <circle class="sg-accent sgpop1" cx="129" cy="56" r="13"/>
+            <path class="sg-plus sgpop1" d="M129 50v12M123 56h12"/>
+            <text class="sg-cap" x="91" y="180" text-anchor="middle">Create a folder</text>
+          </g>
+
+          <!-- STEP 2 — double-click to open -->
+          <g class="step s2" transform="translate(222,0)">
+            <rect class="sg-panel" x="0" y="4" width="182" height="150" rx="14"/>
+            <circle class="sg-badge" cx="26" cy="30" r="12"/><text class="sg-num" x="26" y="34" text-anchor="middle">2</text>
+            <circle class="sg-ripple sgripple" cx="92" cy="74" r="20"/>
+            <path class="sg-folder-d" d="M55 52a7 7 0 0 1 7-7h17a7 7 0 0 1 5 2l5 6h38a8 8 0 0 1 8 8v33a8 8 0 0 1-8 8H62a7 7 0 0 1-7-7z"/>
+            <path class="sg-folder" d="M51 66a6 6 0 0 1 6-6h70a6 6 0 0 1 6 6v24a8 8 0 0 1-8 8H59a8 8 0 0 1-8-8z"/>
+            <g class="sgcursor" transform="translate(104,82)">
+              <path class="sg-cursor" d="M0 0 L0 20 L5 15 L9 23 L12 21 L8 14 L15 14 Z"/>
+            </g>
+            <text class="sg-cap" x="91" y="180" text-anchor="middle">Double-click to open</text>
+          </g>
+
+          <!-- STEP 3 — add the files -->
+          <g class="step s3" transform="translate(438,0)">
+            <rect class="sg-panel" x="0" y="4" width="182" height="150" rx="14"/>
+            <circle class="sg-badge" cx="26" cy="30" r="12"/><text class="sg-num" x="26" y="34" text-anchor="middle">3</text>
+            <g class="sgfile f1" transform="translate(48,18)"><rect class="sg-file" width="26" height="32" rx="3"/><path class="sg-fold" d="M20 0v6h6"/><rect class="sg-line" x="5" y="20" width="16" height="2.4" rx="1"/><rect class="sg-line" x="5" y="25" width="11" height="2.4" rx="1"/><text class="sg-md" x="6" y="14">md</text></g>
+            <g class="sgfile f2" transform="translate(78,14)"><rect class="sg-file" width="26" height="32" rx="3"/><path class="sg-fold" d="M20 0v6h6"/><rect class="sg-line" x="5" y="20" width="16" height="2.4" rx="1"/><rect class="sg-line" x="5" y="25" width="11" height="2.4" rx="1"/><text class="sg-md" x="6" y="14">md</text></g>
+            <g class="sgfile f3" transform="translate(108,18)"><rect class="sg-file" width="26" height="32" rx="3"/><path class="sg-fold" d="M20 0v6h6"/><rect class="sg-line" x="5" y="20" width="16" height="2.4" rx="1"/><rect class="sg-line" x="5" y="25" width="11" height="2.4" rx="1"/><text class="sg-md" x="6" y="14">md</text></g>
+            <path class="sg-folder-d" d="M47 70a7 7 0 0 1 7-7h17a7 7 0 0 1 5 2l5 6h46a8 8 0 0 1 8 8v25a8 8 0 0 1-8 8H54a7 7 0 0 1-7-7z"/>
+            <path class="sg-folder" d="M43 80h96l-8 27a9 9 0 0 1-8 6H51a9 9 0 0 1-9-7z"/>
+            <text class="sg-cap" x="91" y="180" text-anchor="middle">Add the 5 files</text>
+          </g>
+
+          <!-- STEP 4 — share with team -->
+          <g class="step s4" transform="translate(654,0)">
+            <rect class="sg-panel" x="0" y="4" width="182" height="150" rx="14"/>
+            <circle class="sg-badge" cx="26" cy="30" r="12"/><text class="sg-num" x="26" y="34" text-anchor="middle">4</text>
+            <path class="sg-folder-d" d="M30 60a7 7 0 0 1 7-7h17a7 7 0 0 1 5 2l5 6h32a8 8 0 0 1 8 8v30a8 8 0 0 1-8 8H37a7 7 0 0 1-7-7z"/>
+            <path class="sg-folder" d="M26 73a6 6 0 0 1 6-6h62a6 6 0 0 1 6 6v22a8 8 0 0 1-8 8H34a8 8 0 0 1-8-8z"/>
+            <path class="sg-share sgpop4" d="M104 86 q34 -6 44 18" fill="none"/>
+            <path class="sg-share sgpop4" d="M148 104 l-2 -11 m2 11 l-11 0" fill="none"/>
+            <g class="sgava a1"><circle class="sg-ava" cx="138" cy="50" r="13"/><circle class="sg-avah" cx="138" cy="46" r="4.5"/><path class="sg-avah" d="M131 58a7 7 0 0 1 14 0z"/></g>
+            <g class="sgava a2"><circle class="sg-ava" cx="118" cy="80" r="13"/><circle class="sg-avah" cx="118" cy="76" r="4.5"/><path class="sg-avah" d="M111 88a7 7 0 0 1 14 0z"/></g>
+            <text class="sg-cap" x="91" y="180" text-anchor="middle">Share with the team</text>
+          </g>
+        </svg>
+      </div>
+
+      <ol class="setup-steps">
+        <li><span class="ss-n">1</span><div><strong>Create a folder on a shared drive.</strong> Give it a clear, unique name like <code>[Brand] — Brand Brain</code> so anyone can find it. Use wherever your team already works — Google Drive, SharePoint, or Dropbox.</div></li>
+        <li><span class="ss-n">2</span><div><strong>Open it and drop in the five files.</strong> Keep all five together: <code>brand-profile</code>, <code>style-guide</code>, <code>audience</code>, <code>keyword-map</code>, and <code>never-do</code>.</div></li>
+        <li><span class="ss-n">3</span><div><strong>Share the folder with your team.</strong> Give everyone who writes or prompts read access. One folder, one version — everyone starts from the same place.</div></li>
+        <li><span class="ss-n">4</span><div><strong>Point your AI at it.</strong> For a quick chat, paste or link the files first. For an agent, add the folder to its knowledge base with an instruction to always read it before responding.</div></li>
+      </ol>
+
+      <div class="setup-prompt">
+        <div class="sp-label">The one-line start prompt</div>
+        <code id="setupPromptText">Before we begin, read the brand context in these files and follow it in everything you write: [paste or link the Brand Brain files].</code>
+        <button class="btn btn-ghost btn-sm" id="copySetupPrompt">Copy</button>
+      </div>
+
+      <p class="setup-tip"><strong>Keep it current.</strong> When something changes — a new rule, a new competitor — update the file in the shared folder. Every prompt and agent picks it up next time. No re-briefing.</p>
+    </div>
+  </section>
+
 </div>
 
 <!-- Master Context slide-over -->
@@ -1316,22 +1463,31 @@ var EXPLAINER_B64="PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9ImVuIj48aGVhZD4KICA8bWV0Y
 var frame=document.getElementById("explainerFrame");
 var shell=document.querySelector(".shell");
 var view=document.getElementById("explainerView");
+var setup=document.getElementById("setupView");
+var graphic=document.getElementById("setupGraphic");
 var loaded=false;
 function decode(b64){var bin=atob(b64),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new TextDecoder("utf-8").decode(u);}
 function setView(v){
-  var ex=v==="explainer";
-  if(shell) shell.style.display=ex?"none":"";
-  if(view) view.hidden=!ex;
+  if(shell) shell.style.display = v==="builder" ? "" : "none";
+  if(view) view.hidden = v!=="explainer";
+  if(setup) setup.hidden = v!=="setup";
   var tabs=document.querySelectorAll(".view-tab");
   for(var i=0;i<tabs.length;i++) tabs[i].classList.toggle("active", tabs[i].getAttribute("data-view")===v);
-  if(ex&&!loaded){ frame.srcdoc=decode(EXPLAINER_B64); loaded=true; }
+  if(v==="explainer" && !loaded){ frame.srcdoc=decode(EXPLAINER_B64); loaded=true; }
+  if(v==="setup" && graphic){ graphic.classList.remove("play"); void graphic.offsetWidth; graphic.classList.add("play"); }
   try{localStorage.setItem("brandBrain.view",v);}catch(e){}
-  if(!ex) window.scrollTo({top:0});
+  if(v!=="explainer") window.scrollTo({top:0});
 }
 var tabs=document.querySelectorAll(".view-tab");
 for(var i=0;i<tabs.length;i++){(function(b){b.addEventListener("click",function(){setView(b.getAttribute("data-view"));});})(tabs[i]);}
+var cp=document.getElementById("copySetupPrompt");
+if(cp) cp.addEventListener("click",function(){
+  var el=document.getElementById("setupPromptText"); var txt=el?el.textContent:"";
+  function done(){ var o=cp.textContent; cp.textContent="Copied"; setTimeout(function(){cp.textContent=o;},1400); }
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done,done); } else { done(); }
+});
 var saved=null; try{saved=localStorage.getItem("brandBrain.view");}catch(e){}
-if(saved==="explainer") setView("explainer");
+if(saved==="explainer"||saved==="setup") setView(saved);
 })();
 </script>
 </body>
