@@ -713,7 +713,7 @@ function filled(arr,key){ return (arr||[]).filter(function(e){ return has(e[key]
 
 var FILES = [
   {
-    id:"brand-profile", file:"brand-profile", title:"Brand Profile", wrapper:"brand_profile",
+    id:"brand-profile", file:"brand-profile", title:"Brand Profile", wrapper:"brand_profile", owner:"Acquisition",
     desc:"Who the brand is: its platform, purpose, values, personality, and what makes it different. The foundation every other file references.",
     sections:[
       { name:"Company Overview", tag:"company_overview", questions:[
@@ -792,7 +792,7 @@ var FILES = [
   },
 
   {
-    id:"style-guide", file:"style-guide", title:"Style Guide", wrapper:"style_guide",
+    id:"style-guide", file:"style-guide", title:"Style Guide", wrapper:"style_guide", owner:"Creative Team",
     desc:"How the brand sounds, what it says, and what it never says. Used by anyone writing copy or prompting AI to write copy.",
     sections:[
       { name:"Brand Voice", tag:"brand_voice", questions:[
@@ -885,7 +885,7 @@ var FILES = [
   },
 
   {
-    id:"audience", file:"audience", title:"Audience", wrapper:"audience",
+    id:"audience", file:"audience", title:"Audience", wrapper:"audience", owner:"Acquisition Team",
     desc:"Who the brand is for and how they think, so AI tools write with the right assumptions, priorities, and tone.",
     sections:[
       { name:"Core Audience", tag:"core_audience", questions:[
@@ -930,7 +930,7 @@ var FILES = [
   },
 
   {
-    id:"keyword-map", file:"keyword-map", title:"Keyword and Prompt Map", wrapper:"keyword_and_prompt_map",
+    id:"keyword-map", file:"keyword-map", title:"Keyword and Prompt Map", wrapper:"keyword_and_prompt_map", owner:"SEO Team",
     desc:"The prompts, questions, and topics the brand needs to own in AI-assisted search (GEO).",
     sections:[
       { name:"Prompt Strategy", tag:"prompt_strategy", questions:[
@@ -960,7 +960,7 @@ var FILES = [
   },
 
   {
-    id:"never-do", file:"never-do", title:"Never Do", wrapper:"never_do", last:true,
+    id:"never-do", file:"never-do", title:"Never Do", wrapper:"never_do", owner:"Marketing Leadership", last:true,
     desc:"The hard rules. If content breaks any of these, it gets rewritten before publishing. The most directly actionable file in the Brain for AI output quality.",
     intro:["This is the most important file in the Brain for controlling AI output. Vague rules produce vague compliance.",
            "For each rule, give it a name, describe what never to do, show a bad example, and show what good looks like instead. The more specific you are here, the more consistently every AI tool will follow it."],
@@ -1015,6 +1015,7 @@ var FILES = [
       ]},
       { name:"AI Operating Instructions", tag:"ai_operating_instructions", questions:[
         { id:"Q37", n:"Q37", label:"What are the specific rules AI tools must follow when working for your brand?", type:"repeat", max:15,
+          seed:[{mode:"Always",instruction:"Use audience insights before making recommendations."},{mode:"Always",instruction:"Reference evidence where possible."},{mode:"Always",instruction:"Align recommendations with positioning."},{mode:"Always",instruction:"Use the approved terminology."},{mode:"Never",instruction:"Invent statistics."},{mode:"Never",instruction:"Make unsubstantiated claims."},{mode:"Never",instruction:"Ignore audience objections."},{mode:"Never",instruction:"Suggest strategies already ruled out."},{mode:"Never",instruction:"Recommend positioning that conflicts with the brand."}],
           fields:[{key:"mode",label:"Mode",toggle:["Always","Never"]},{key:"instruction",label:"Instruction"}],
           help:"Direct instructions for AI tools. Examples: \"Always confirm the destination before writing trip copy.\" \"Never invent product details; mark unknowns for review.\"",
           nudge:"Think of the last AI-generated piece you had to rewrite. Add a rule that would have prevented it.",
@@ -1161,7 +1162,7 @@ function renderMain(){
 
   var head=document.createElement("div");
   head.className="file-head";
-  head.innerHTML='<div class="file-eyebrow">File '+(FILES.indexOf(f)+1)+' of 5 · '+f.file+'.md</div>'+
+  head.innerHTML='<div class="file-eyebrow">File '+(FILES.indexOf(f)+1)+' of 5 · '+f.file+'.md'+(f.owner?' · Owned by '+f.owner:'')+'</div>'+
     '<h1>'+f.title+'</h1><p class="file-desc">'+f.desc+'</p>';
   main.appendChild(head);
 
