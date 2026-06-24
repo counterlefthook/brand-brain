@@ -367,6 +367,15 @@ pre.mono-box{font-family:var(--mono);font-size:12.5px;line-height:1.65;white-spa
   .setup-graphic.play .step,.setup-graphic.play .sgfile,.setup-graphic.play .sgava{animation:none!important;opacity:1!important}
 }
 @media(max-width:880px){#setupView{padding:24px 20px 80px}.setup-h1{font-size:26px}}
+
+/* What is a Brand Brain - internal tabs */
+.wi-tabs{display:flex;flex-wrap:wrap;gap:0 26px;border-bottom:1px solid var(--line);margin:26px 0 24px}
+.wi-tab{background:none;border:none;border-bottom:2px solid transparent;padding:11px 2px;margin-bottom:-1px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);cursor:pointer;transition:color var(--dur-fast)}
+.wi-tab:hover{color:var(--ink)}
+.wi-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.wi-panel{display:none;animation:sgFade .3s both}
+.wi-panel.active{display:block}
+@media(prefers-reduced-motion:reduce){.wi-panel{animation:none}}
 </style>
 </head>
 <body>
@@ -410,35 +419,69 @@ pre.mono-box{font-family:var(--mono);font-size:12.5px;line-height:1.65;white-spa
       <div class="file-eyebrow">What is a Brand Brain</div>
       <h1 class="wi-h1">Your brand's official context, in one place</h1>
       <p class="wi-lead">A framework for consistent, efficient AI use across our brands.</p>
-      <p class="wi-body">Every time someone on your team uses AI, it needs to understand who we are. Without a shared source of truth, every person recreates that context differently. The Brand Brain solves that with a single, maintained set of files everyone points to.</p>
 
-      <div class="wi-eyebrow2">The core idea</div>
-      <div class="wi-cols">
-        <div class="wi-card"><div class="wi-card-t">Without it</div><p>Each person writes their own context prompt. Inconsistent, inefficient, and off-brand more often than not.</p></div>
-        <div class="wi-card wi-card-hl"><div class="wi-card-t">With a Brand Brain</div><p>One official set of context files. Everyone points to it. The AI always starts from the same foundation.</p></div>
-        <div class="wi-card"><div class="wi-card-t">The result</div><p>Consistent AI output. Faster workflows. "On-brand" by default, every time.</p></div>
+      <nav class="wi-tabs" aria-label="Sections">
+        <button class="wi-tab active" data-wi="what">What it is</button>
+        <button class="wi-tab" data-wi="inside">What's inside</button>
+        <button class="wi-tab" data-wi="where">Where it lives</button>
+        <button class="wi-tab" data-wi="use">How to use it</button>
+        <button class="wi-tab" data-wi="why">Why it matters</button>
+      </nav>
+
+      <div class="wi-panel active" id="wi-what">
+        <div class="intro-note"><p><strong>The Brand Brain is your brand's official context, in one place.</strong> Every time someone on your team uses AI, it needs to understand who we are. Without a shared source of truth, every person recreates that context differently. The Brand Brain solves that with a single, maintained set of files everyone points to.</p></div>
+        <div class="wi-eyebrow2">The core idea</div>
+        <div class="wi-cols">
+          <div class="wi-card"><div class="wi-card-t">Without it</div><p>Each person writes their own context prompt. Inconsistent, inefficient, and off-brand more often than not.</p></div>
+          <div class="wi-card wi-card-hl"><div class="wi-card-t">With a Brand Brain</div><p>One official set of context files. Everyone points to it. The AI always starts from the same foundation.</p></div>
+          <div class="wi-card"><div class="wi-card-t">The result</div><p>Consistent AI output. Faster workflows. "On-brand" by default, every time.</p></div>
+        </div>
       </div>
 
-      <div class="wi-eyebrow2">What's inside</div>
-      <p class="wi-body">Five Markdown files, each wrapped in semantic tags so an AI can locate and apply the right context without reading the whole document:</p>
-      <div class="wi-files">
-        <div class="wi-file"><div class="wi-file-n">brand-profile</div><p>Who you are, what you sell, your positioning, your competitors, and what you're not.</p></div>
-        <div class="wi-file"><div class="wi-file-n">style-guide</div><p>Voice, tone, terminology, and formatting: the rules that make output sound like you.</p></div>
-        <div class="wi-file"><div class="wi-file-n">audience</div><p>Who you're for, what they actually want, their objections, and the language they use.</p></div>
-        <div class="wi-file"><div class="wi-file-n">keyword-map</div><p>The topics, questions, and search terms you want to be found for.</p></div>
-        <div class="wi-file"><div class="wi-file-n">never-do</div><p>The hard rules: banned claims, off-limits positioning, and AI operating instructions.</p></div>
+      <div class="wi-panel" id="wi-inside">
+        <p class="wi-body">Five Markdown files, each wrapped in semantic tags so an AI can locate and apply the right context without reading the whole document:</p>
+        <div class="wi-files">
+          <div class="wi-file"><div class="wi-file-n">brand-profile</div><p>Who you are, what you sell, your positioning, your competitors, and what you're not.</p></div>
+          <div class="wi-file"><div class="wi-file-n">style-guide</div><p>Voice, tone, terminology, and formatting: the rules that make output sound like you.</p></div>
+          <div class="wi-file"><div class="wi-file-n">audience</div><p>Who you're for, what they actually want, their objections, and the language they use.</p></div>
+          <div class="wi-file"><div class="wi-file-n">keyword-map</div><p>The topics, questions, and search terms you want to be found for.</p></div>
+          <div class="wi-file"><div class="wi-file-n">never-do</div><p>The hard rules: banned claims, off-limits positioning, and AI operating instructions.</p></div>
+        </div>
+        <p class="wi-body" style="margin-top:16px"><strong>One Brand Brain, many components.</strong> A brand can have as many components as it needs, creative, sales, SEO, acquisition, and more. Anything that needs to stay consistent and is regularly fed to AI as context belongs in the Brain.</p>
       </div>
 
-      <div class="wi-eyebrow2">Same brief, different result</div>
-      <div class="wi-ba">
-        <div class="wi-ba-col wi-ba-bad"><div class="wi-ba-l">Without a Brand Brain</div><p class="wi-ba-q">"We are a premium adventure travel company that offers tailor-made, world-class experiences to discerning bucket-list travellers seeking unforgettable journeys..."</p><div class="wi-ba-note">Generic. Off-voice. Uses three phrases we explicitly banned.</div></div>
-        <div class="wi-ba-col wi-ba-good"><div class="wi-ba-l">With a Brand Brain</div><p class="wi-ba-q">"Exodus runs small-group trips that go deeper than the itinerary. Our guides aren't just local, they're specialists. We work with people who've already seen the highlights and want to understand the place."</p><div class="wi-ba-note">On-brand. On-voice. No banned phrases.</div></div>
+      <div class="wi-panel" id="wi-where">
+        <p class="wi-body">The files live in one shared location anyone on the team can access. Each brand has its own set of files, and everyone links to the same source.</p>
+        <div class="wi-cols">
+          <div class="wi-card"><div class="wi-card-t">Google Drive / SharePoint</div><p>Copy and paste into a prompt, or link it. Most common for day-to-day team use.</p></div>
+          <div class="wi-card"><div class="wi-card-t">Agent knowledge base</div><p>Upload once. The agent reads it automatically on every conversation.</p></div>
+          <div class="wi-card"><div class="wi-card-t">GitHub</div><p>Version-controlled. Track changes and keep an audit trail for brand decisions.</p></div>
+        </div>
       </div>
 
-      <div class="wi-eyebrow2">Why it matters</div>
-      <div class="intro-note"><p><strong>Your Brand Brain becomes your institutional memory.</strong> As AI becomes a standard tool across our teams, it's the memory your AI operates from. Instead of each person training the AI through trial and error, you build that knowledge once, maintain it centrally, and everyone benefits.</p></div>
+      <div class="wi-panel" id="wi-use">
+        <p class="wi-body">Two ways to use it: day-to-day prompting and agent builds.</p>
+        <div class="setup-prompt">
+          <div class="sp-label">Day-to-day: the one-line start prompt</div>
+          <code id="wiUsePromptText">Before we begin, please read this context about our brand and follow it in everything you write: [paste or link the files].</code>
+          <button class="btn btn-ghost btn-sm wi-copy" data-copy="wiUsePromptText">Copy</button>
+        </div>
+        <div class="wi-eyebrow2">Building an agent</div>
+        <ol class="setup-steps">
+          <li><span class="ss-n">1</span><div><strong>Upload the files to the agent's knowledge base.</strong> Done once. The agent reads them on every conversation from that point on, no manual pasting required.</div></li>
+          <li><span class="ss-n">2</span><div><strong>Add a system instruction that references them.</strong> "You are an assistant for [Brand]. Always reference the brand context in your knowledge base before responding."</div></li>
+        </ol>
+        <p class="wi-next">For the full walkthrough, see <button class="wi-link" data-goto="setup">Set it up</button>.</p>
+      </div>
 
-      <p class="wi-next">Ready to put it to work? See <button class="wi-link" data-goto="setup">Set it up</button> for how to store and use your files.</p>
+      <div class="wi-panel" id="wi-why">
+        <div class="wi-eyebrow2">Same brief, different result</div>
+        <div class="wi-ba">
+          <div class="wi-ba-col wi-ba-bad"><div class="wi-ba-l">Without a Brand Brain</div><p class="wi-ba-q">"We are a premium adventure travel company that offers tailor-made, world-class experiences to discerning bucket-list travellers seeking unforgettable journeys..."</p><div class="wi-ba-note">Generic. Off-voice. Uses three phrases we explicitly banned.</div></div>
+          <div class="wi-ba-col wi-ba-good"><div class="wi-ba-l">With a Brand Brain</div><p class="wi-ba-q">"Exodus runs small-group trips that go deeper than the itinerary. Our guides aren't just local, they're specialists. We work with people who've already seen the highlights and want to understand the place."</p><div class="wi-ba-note">On-brand. On-voice. No banned phrases.</div></div>
+        </div>
+        <div class="intro-note" style="margin-top:22px"><p><strong>Your Brand Brain becomes your institutional memory.</strong> As AI becomes a standard tool across our teams, it's the memory your AI operates from. Instead of each person training the AI through trial and error, you build that knowledge once, maintain it centrally, and everyone benefits.</p></div>
+      </div>
     </div>
   </section>
 
@@ -1509,6 +1552,18 @@ var gotos=document.querySelectorAll("[data-goto]");
 for(var j=0;j<gotos.length;j++){(function(b){b.addEventListener("click",function(){setView(b.getAttribute("data-goto"));});})(gotos[j]);}
 var cp=document.getElementById("copySetupPrompt");
 if(cp) cp.addEventListener("click",function(){ var el=document.getElementById("setupPromptText"); var txt=el?el.textContent:""; function done(){var o=cp.textContent;cp.textContent="Copied";setTimeout(function(){cp.textContent=o;},1400);} if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,done);}else{done();} });
+var wtabs=document.querySelectorAll(".wi-tab");
+for(var k=0;k<wtabs.length;k++){(function(b){b.addEventListener("click",function(){
+  var id=b.getAttribute("data-wi"), ts=document.querySelectorAll(".wi-tab"), ps=document.querySelectorAll(".wi-panel");
+  for(var x=0;x<ts.length;x++) ts[x].classList.toggle("active", ts[x]===b);
+  for(var y=0;y<ps.length;y++) ps[y].classList.toggle("active", ps[y].id==="wi-"+id);
+});})(wtabs[k]);}
+var copies=document.querySelectorAll("[data-copy]");
+for(var c=0;c<copies.length;c++){(function(b){b.addEventListener("click",function(){
+  var el=document.getElementById(b.getAttribute("data-copy")); var txt=el?el.textContent:"";
+  function done(){var o=b.textContent;b.textContent="Copied";setTimeout(function(){b.textContent=o;},1400);}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,done);}else{done();}
+});})(copies[c]);}
 var saved=null; try{saved=localStorage.getItem("brandBrain.view");}catch(e){}
 if(saved==="explainer"||saved==="setup") setView(saved);
 })();
