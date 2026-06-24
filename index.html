@@ -745,7 +745,7 @@ var FILES = [
           out:function(v){ return "**Why customers choose us:** "+t(v); } },
         { id:"Q6", n:"Q6", label:"What are your three to five strongest proof points?", type:"repeat", max:5,
           fields:[{key:"point",label:"Proof point"},{key:"source",label:"Source or context",opt:true}],
-          help:"Verifiable facts that support your positioning: years in business, customer numbers, awards, statistics, or notable clients. Include only claims you can evidence.",
+          help:"Verifiable facts that support your positioning: years in business, customer numbers, awards, or statistics. Include only claims you can evidence.",
           req:R.min(2,"point"),
           out:function(v){ var b=filled(v,"point").map(function(e){return bulletPair(e.point,e.source);});
             return b.length ? "**Proof points:**\n"+b.join("\n") : ""; } }
