@@ -714,7 +714,7 @@ function filled(arr,key){ return (arr||[]).filter(function(e){ return has(e[key]
 var FILES = [
   {
     id:"brand-profile", file:"brand-profile", title:"Brand Profile", wrapper:"brand_profile",
-    desc:"Who you are, what you sell, why customers choose you, and what you are not. The foundation every other file references.",
+    desc:"Who the brand is: its platform, purpose, values, personality, and what makes it different. The foundation every other file references.",
     sections:[
       { name:"Company Overview", tag:"company_overview", questions:[
         { id:"Q1", n:"Q1", label:"What is your brand name and website?", type:"dualtext",
@@ -722,48 +722,71 @@ var FILES = [
           help:"Used in every output file header and the Master Context Block.",
           req:R.yes(),
           out:function(v){ v=v||{}; return "**Brand:** "+t(v.brand)+"\n**Website:** "+t(v.website); } },
-        { id:"Q2", n:"Q2", label:"Describe what you do in one or two sentences, in plain language for someone unfamiliar with your company.", type:"textarea", size:"sm",
-          help:"One or two plain-language sentences, without jargon. This becomes the opening line of context in every AI interaction.",
+        { id:"Q2", n:"Q2", label:"Describe your brand in one or two sentences, in plain language for someone unfamiliar with your company.", type:"textarea", size:"sm",
+          help:"A plain-language description, without jargon. This becomes the opening line of context in every AI interaction.",
           req:R.yes(),
-          out:function(v){ return "**Elevator pitch:** "+t(v); } },
-        { id:"Q3", n:"Q3", label:"What specific problem do you solve for your customers?", type:"textarea", size:"sm",
-          help:"State the underlying problem the customer has before they find you, not your product features.",
+          out:function(v){ return "**Brand description:** "+t(v); } }
+      ]},
+      { name:"Brand Platform", tag:"brand_platform", questions:[
+        { id:"Q43", n:"Q43", label:"What is your core brand line?", type:"repeat", max:1, single:true,
+          fields:[{key:"line",label:"Core brand line"},{key:"use",label:"How to use it",ta:true},{key:"avoid",label:"How not to use it",ta:true}],
+          help:"Your definitive outward-facing line, with guidance on where it should and should not be used.",
+          req:R.rec(),
+          out:function(v){ var e=(v&&v[0])||{}; if(!has(e.line)) return ""; var s="<core_brand_line>\n  <line>"+t(e.line)+"</line>"; if(has(e.use)) s+="\n  <how_to_use>"+t(e.use)+"</how_to_use>"; if(has(e.avoid)) s+="\n  <how_not_to_use>"+t(e.avoid)+"</how_not_to_use>"; return s+"\n</core_brand_line>"; } },
+        { id:"Q44", n:"Q44", label:"Do you have a supporting theme or secondary line?", type:"repeat", max:1, single:true,
+          fields:[{key:"theme",label:"Supporting theme"},{key:"use",label:"How to use it",ta:true},{key:"avoid",label:"How not to use it",ta:true}],
+          help:"An emotive theme that supports the core brand line, with guidance on its use.",
+          req:R.rec(),
+          out:function(v){ var e=(v&&v[0])||{}; if(!has(e.theme)) return ""; var s="<supporting_theme>\n  <theme>"+t(e.theme)+"</theme>"; if(has(e.use)) s+="\n  <how_to_use>"+t(e.use)+"</how_to_use>"; if(has(e.avoid)) s+="\n  <how_not_to_use>"+t(e.avoid)+"</how_not_to_use>"; return s+"\n</supporting_theme>"; } },
+        { id:"Q45", n:"Q45", label:"Why does your brand exist, beyond commercial goals?", type:"repeat", max:1, single:true,
+          fields:[{key:"statement",label:"Brand purpose",ta:true},{key:"plain",label:"Purpose in plain language",ta:true}],
+          help:"The reason the brand exists, and the same idea expressed in plain language.",
+          req:R.rec(),
+          out:function(v){ var e=(v&&v[0])||{}; if(!has(e.statement)&&!has(e.plain)) return ""; var s="<brand_purpose>"; if(has(e.statement)) s+="\n  <statement>"+t(e.statement)+"</statement>"; if(has(e.plain)) s+="\n  <plain_language>"+t(e.plain)+"</plain_language>"; return s+"\n</brand_purpose>"; } },
+        { id:"Q46", n:"Q46", label:"What is your brand promise to customers?", type:"textarea", size:"md",
+          help:"The core promise the brand makes and keeps in every interaction.",
+          req:R.rec(),
+          out:function(v){ return has(v) ? "**Brand promise:** "+t(v) : ""; } }
+      ]},
+      { name:"Brand Difference", tag:"brand_difference", questions:[
+        { id:"Q5", n:"Q5", label:"What makes your brand different? What can customers get from you that they genuinely cannot get elsewhere?", type:"textarea", size:"md",
+          help:"Be specific. State what is genuinely distinct, not generic claims such as \"better service.\"",
           req:R.yes(),
-          out:function(v){ return "**Problem solved:** "+t(v); } }
+          out:function(v){ return "**Brand difference:** "+t(v); } },
+        { id:"Q51", n:"Q51", label:"Sum up your difference in a single line.", type:"text", ph:"e.g. No one goes further to bring you closer.",
+          help:"A short, memorable statement that captures what sets the brand apart.",
+          req:R.rec(),
+          out:function(v){ return has(v) ? "**Core difference statement:** "+t(v) : ""; } }
       ]},
-      { name:"Products and Services", tag:"products_and_services", questions:[
-        { id:"Q4", n:"Q4", label:"Describe your core product or service in plain terms. If you have more than one, list the top three.", type:"repeat", max:5,
-          fields:[{key:"name",label:"Product or service name"},{key:"desc",label:"One-sentence description"},{key:"benefit",label:"The single biggest benefit to the customer"}],
-          help:"Describe what the customer gets, not how you deliver it.",
-          req:R.min(1,"name"),
-          out:function(v){ return filled(v,"name").map(function(e){ var s="<product>\n  <name>"+t(e.name)+"</name>"; if(has(e.desc)) s+="\n  <description>"+t(e.desc)+"</description>"; if(has(e.benefit)) s+="\n  <key_benefit>"+t(e.benefit)+"</key_benefit>"; return s+"\n</product>"; }).join("\n"); } }
+      { name:"Values and Personality", tag:"values_and_personality", questions:[
+        { id:"Q47", n:"Q47", label:"What are your brand values?", type:"repeat", max:8,
+          fields:[{key:"value",label:"Value"},{key:"means",label:"What it means in practice",opt:true}],
+          help:"The core values that guide the brand, with how each shows up in practice.",
+          req:R.rec(),
+          out:function(v){ var es=filled(v,"value"); if(!es.length) return ""; return "<brand_values>\n"+es.map(function(e){ var s="  <value>\n    <name>"+t(e.value)+"</name>"; if(has(e.means)) s+="\n    <in_practice>"+t(e.means)+"</in_practice>"; return s+"\n  </value>"; }).join("\n")+"\n</brand_values>"; } },
+        { id:"Q48", n:"Q48", label:"Describe your brand as a person. What are its defining personality traits?", type:"repeat", max:6,
+          fields:[{key:"trait",label:"Persona trait",ph:"e.g. Cultured and knowledgeable"},{key:"desc",label:"Description",opt:true}],
+          help:"A few traits that capture how the brand thinks and behaves.",
+          req:R.rec(),
+          out:function(v){ var es=filled(v,"trait"); if(!es.length) return ""; return "<brand_persona>\n"+es.map(function(e){ var s="  <trait>\n    <name>"+t(e.trait)+"</name>"; if(has(e.desc)) s+="\n    <description>"+t(e.desc)+"</description>"; return s+"\n  </trait>"; }).join("\n")+"\n</brand_persona>"; } },
+        { id:"Q49", n:"Q49", label:"How does that personality show up in practice?", type:"textarea", size:"md",
+          help:"How the persona translates into tone, behaviour, and content decisions.",
+          req:R.rec(),
+          out:function(v){ return has(v) ? "**Personality in practice:** "+t(v) : ""; } }
       ]},
-      { name:"Competitive Positioning", tag:"competitive_positioning", questions:[
-        { id:"Q5", n:"Q5", label:"Why do customers choose you over the alternatives?", type:"textarea", size:"md",
-          help:"State what customers cannot easily get elsewhere. Avoid generic claims such as \"better service.\"",
-          req:R.yes(),
-          out:function(v){ return "**Why customers choose us:** "+t(v); } },
-        { id:"Q6", n:"Q6", label:"What are your three to five strongest proof points?", type:"repeat", max:5,
-          fields:[{key:"point",label:"Proof point"},{key:"source",label:"Source or context",opt:true}],
-          help:"Verifiable facts that support your positioning: years in business, customer numbers, awards, or statistics. Include only claims you can evidence.",
-          req:R.min(2,"point"),
-          out:function(v){ var b=filled(v,"point").map(function(e){return bulletPair(e.point,e.source);});
-            return b.length ? "**Proof points:**\n"+b.join("\n") : ""; } }
-      ]},
-      { name:"Competitors", tag:"competitors", questions:[
-        { id:"Q7", n:"Q7", label:"Who are your two or three main competitors?", type:"repeat", max:5,
-          fields:[{key:"name",label:"Competitor name"},{key:"strength",label:"Their main strength"},{key:"adv",label:"Your advantage against them"}],
-          help:"Record each competitor's genuine strengths alongside your advantage. Accurate competitive context produces more useful output.",
-          req:R.min(1,"name"),
-          out:function(v){ return filled(v,"name").map(function(e){ var s="<competitor>\n  <name>"+t(e.name)+"</name>"; if(has(e.strength)) s+="\n  <their_strength>"+t(e.strength)+"</their_strength>"; if(has(e.adv)) s+="\n  <our_advantage>"+t(e.adv)+"</our_advantage>"; return s+"\n</competitor>"; }).join("\n"); } }
+      { name:"Messaging Pillars", tag:"messaging_pillars", questions:[
+        { id:"Q50", n:"Q50", label:"What are your core messaging pillars?", type:"repeat", max:6,
+          fields:[{key:"pillar",label:"Pillar"},{key:"focus",label:"Focus",opt:true}],
+          help:"The recurring themes your messaging is built on. Give each a name and its focus.",
+          req:R.rec(),
+          out:function(v){ var es=filled(v,"pillar"); if(!es.length) return ""; return es.map(function(e){ var s="<pillar>\n  <name>"+t(e.pillar)+"</name>"; if(has(e.focus)) s+="\n  <focus>"+t(e.focus)+"</focus>"; return s+"\n</pillar>"; }).join("\n"); } }
       ]},
       { name:"What We Are Not", tag:"what_we_are_not", questions:[
-        { id:"Q8", n:"Q8", label:'Complete the sentence: "We are NOT…" Add up to five.', type:"repeat", max:5,
+        { id:"Q8", n:"Q8", label:"Complete the sentence: \"We are NOT…\" Add up to five.", type:"repeat", max:5,
           fields:[{key:"statement",label:"We are not…"},{key:"reason",label:"Why this matters to state",opt:true}],
           help:"Categories, comparisons, or misperceptions to rule out. Example: \"We are not a budget option.\"",
           req:R.min(2,"statement"),
-          out:function(v){ var b=filled(v,"statement").map(function(e){return bulletPair(e.statement,e.reason);});
-            return b.length ? "**We are NOT:**\n"+b.join("\n") : ""; } }
+          out:function(v){ var b=filled(v,"statement").map(function(e){return bulletPair(e.statement,e.reason);}); return b.length ? "**We are NOT:**\n"+b.join("\n") : ""; } }
       ]}
     ]
   },
