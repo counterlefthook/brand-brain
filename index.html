@@ -911,6 +911,17 @@ var FILES = [
         
         
         
+        { id:"Q29", n:"Q29", label:"What specific search terms or question formats do you want to be found for?", type:"repeat", max:20,
+          fields:[{key:"term",label:"Term or question"},{key:"form",label:"Form",toggle:["Short-form","Long-form"]}],
+          help:"Include both short keywords (\"private jet expedition\") and longer natural-language queries. Both affect search and AI visibility.",
+          req:R.min(5,"term"),
+          out:function(v){ var es=filled(v,"term"); if(!es.length) return "";
+            var sh=es.filter(function(e){return (e.form||"Short-form")==="Short-form";});
+            var lo=es.filter(function(e){return e.form==="Long-form";});
+            var s="<target_search_terms>";
+            if(sh.length) s+="\n  <short_form>\n"+sh.map(function(e){return "    <term>"+t(e.term)+"</term>";}).join("\n")+"\n  </short_form>";
+            if(lo.length) s+="\n  <long_form>\n"+lo.map(function(e){return "    <query>"+t(e.term)+"</query>";}).join("\n")+"\n  </long_form>";
+            return s+"\n</target_search_terms>"; } },
         { id:"Q30", n:"Q30", label:"Are there topics, terms, or associations you do not want to be found for or associated with?", type:"repeat", max:10,
           fields:[{key:"term",label:"Topic or term"},{key:"reason",label:"Reason"}],
           help:"Terms and associations to avoid: competitor terms, price brackets you do not occupy, and categories that attract the wrong audience.",
