@@ -125,7 +125,8 @@ ul.files{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;g
 .file-item.locked{opacity:.55;cursor:not-allowed}
 .file-item.locked:hover{background:none;transform:none}
 .lock-badge{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--muted);border:1px solid var(--line-strong);border-radius:5px;padding:2px 6px}
-.index-foot{margin-top:24px;padding-top:16px;border-top:1px solid var(--line)}
+.index-foot{margin-top:24px;padding-top:16px;border-top:1px solid var(--line);display:flex;flex-direction:column;align-items:stretch;gap:9px}
+.index-foot .btn{justify-content:center}
 .linkbtn{background:none;border:none;color:var(--muted);font-size:12.5px;cursor:pointer;padding:4px 0;text-decoration:underline;text-underline-offset:2px}
 .linkbtn:hover{color:var(--coral-600)}
 
@@ -241,6 +242,8 @@ input::placeholder,textarea::placeholder{color:var(--faint)}
 .btn-accent:hover{background:var(--coral-600);border-color:var(--coral-600)}
 .btn-ghost{background:transparent;color:var(--blue);border-color:var(--blue-100)}
 .btn-ghost:hover{border-color:var(--blue);background:var(--blue-50)}
+.btn-danger{background:transparent;color:var(--coral-600);border-color:var(--coral-50)}
+.btn-danger:hover{border-color:var(--coral);background:var(--coral-50)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn:disabled:active{transform:none}
 .btn-sm{padding:8px 16px;font-size:11px}
@@ -268,8 +271,21 @@ pre.mono-box{font-family:var(--mono);font-size:12.5px;line-height:1.65;white-spa
 .exp-state{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-top:2px}
 .exp-state.ready{color:var(--teal)}
 .exp-actions{display:flex;gap:7px}
+.fmt-toggle{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px}
+.fmt-opt{display:flex;flex-direction:column;gap:3px;align-items:flex-start;text-align:left;padding:12px 14px;border:1.5px solid var(--line-strong);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:13px;font-weight:700;color:var(--ink);transition:border-color var(--dur-fast),background var(--dur-fast)}
+.fmt-opt span{font-size:11px;font-weight:600;color:var(--muted)}
+.fmt-opt:hover{border-color:var(--blue-100)}
+.fmt-opt.active{border-color:var(--blue);background:var(--blue-50)}
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 22px;border-radius:var(--pill);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;z-index:80;opacity:0;transition:opacity var(--dur),transform var(--dur);pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* load-mode chooser */
+.loadmodal{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%);width:min(440px,92vw);background:var(--paper);border-radius:var(--radius);box-shadow:0 26px 70px -30px rgba(0,0,0,.55);z-index:70;padding:26px;opacity:0;pointer-events:none;transition:opacity var(--dur),transform var(--dur)}
+.loadmodal.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
+.loadmodal h3{font-family:var(--serif);font-size:21px;margin:0 0 8px;font-weight:700}
+.loadmodal p{color:var(--muted);font-size:13.5px;line-height:1.55;margin:0 0 22px}
+.loadmodal-actions{display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.loadmodal-actions .linkbtn{align-self:center;margin-top:4px}
 
 @media(max-width:880px){
   .shell{flex-direction:column;gap:24px}
@@ -432,7 +448,10 @@ pre.mono-box{font-family:var(--mono);font-size:12.5px;line-height:1.65;white-spa
       <div class="index-eyebrow">The five files</div>
       <ul class="files" id="fileNav"></ul>
       <div class="index-foot">
-        <button class="linkbtn" id="clearAll">Clear all answers</button>
+        <button class="btn btn-ghost btn-sm" id="saveProgress">Save progress (.json)</button>
+        <button class="btn btn-ghost btn-sm" id="loadProgress">Load progress</button>
+        <button class="btn btn-danger btn-sm" id="clearAll">Clear all answers</button>
+        <input type="file" id="loadFile" accept="application/json,.json" hidden>
       </div>
     </nav>
 
@@ -647,13 +666,29 @@ Then ask your actual question. That's the entire workflow.</div>
     <button class="icon-btn" data-close="export" aria-label="Close">&times;</button>
   </div>
   <div class="panel-body">
-    <p class="mcb-note">Five markdown files, each wrapped in semantic XML tags so an LLM can locate and apply specific context. Download them individually or all at once.</p>
+    <p class="mcb-note">Each section becomes a Markdown file. Choose a format, then download the files individually or all at once.</p>
+    <div class="fmt-toggle" role="group" aria-label="Output format">
+      <button class="fmt-opt" id="fmtMd" data-mode="md">Markdown only<span>Recommended for general brand context</span></button>
+      <button class="fmt-opt" id="fmtXml" data-mode="xml">XML-tagged<span>Best for building AI agents</span></button>
+    </div>
     <div id="exportList"></div>
     <div style="margin-top:8px"><button class="btn btn-accent" id="downloadZip">Download all (.zip)</button></div>
     <div class="index-eyebrow" style="margin-top:26px">Preview</div>
     <pre class="mono-box" id="exportPreview" style="margin-top:8px"></pre>
   </div>
 </aside>
+
+<!-- Load-mode chooser -->
+<div class="scrim" id="loadScrim"></div>
+<div class="loadmodal" id="loadModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="loadModalTitle">
+  <h3 id="loadModalTitle">Load saved progress</h3>
+  <p>This is a saved Brand Brain. How should it be applied to your current answers?</p>
+  <div class="loadmodal-actions">
+    <button class="btn btn-primary" id="loadReplace">Replace all my answers</button>
+    <button class="btn btn-ghost" id="loadMerge">Fill in my empty fields only</button>
+    <button class="linkbtn" id="loadCancel">Cancel</button>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -1103,10 +1138,19 @@ function reqMet(q){
   return true;
 }
 function reqBlocking(q){ return q.req.kind!=="rec" && q.req.kind!=="none"; }
+// A file produces output when at least one question compiles to real content.
+function fileHasOutput(f){
+  return f.sections.some(function(s){
+    return s.questions.some(function(q){ return has(t(q.out(getVal(q)))); });
+  });
+}
 function fileComplete(f){
-  return f.sections.every(function(s){
+  var allMet=f.sections.every(function(s){
     return s.questions.every(function(q){ return !reqBlocking(q) || reqMet(q); });
   });
+  // Files with no blocking requirements (e.g. Keyword Map) must still have
+  // genuine content before they count as complete - not just seeded rows.
+  return allMet && fileHasOutput(f);
 }
 function completeCount(){ return FILES.filter(fileComplete).length; }
 
@@ -1492,7 +1536,9 @@ function renderMaster(){
 /* ============================================================ *
  * Output assembly
  * ============================================================ */
-function compileFile(f){
+var outputMode="md"; // "md" = plain Markdown (default), "xml" = semantic XML tags
+function compileFile(f){ return outputMode==="md" ? compileFileMd(f) : compileFileXml(f); }
+function compileFileXml(f){
   var out="# "+f.title+"\n\n<"+f.wrapper+">\n";
   f.sections.forEach(function(s){
     var parts=[];
@@ -1503,6 +1549,69 @@ function compileFile(f){
   });
   out+="\n</"+f.wrapper+">\n";
   return out;
+}
+function compileFileMd(f){
+  var out="# "+f.title+"\n";
+  f.sections.forEach(function(s){
+    var parts=[];
+    s.questions.forEach(function(q){ var o=t(q.out(getVal(q))); if(o) parts.push(xmlBlockToMd(o)); });
+    out+="\n## "+s.name+"\n\n";
+    out+= parts.length ? parts.join("\n\n") : "*Not yet provided.*";
+    out+="\n";
+  });
+  return out;
+}
+/* ---- XML -> plain Markdown (for the Markdown-only export) ---- *
+ * The compiled output keeps user text unescaped for readability, so a strict
+ * XML parser would break on stray & or <. This uses a tolerant tag scanner
+ * over the controlled tag vocabulary instead. Plain-Markdown question outputs
+ * (those not starting with "<") pass through untouched. */
+function mdHumanize(tag){ tag=String(tag).replace(/_/g," "); return tag.charAt(0).toUpperCase()+tag.slice(1); }
+function xmlToTree(str){
+  var re=/<(\/?)([a-z_]+)(?:\s+[^>]*?)?>/g, root={children:[]}, stack=[root], last=0, m;
+  while((m=re.exec(str))){
+    var text=str.slice(last,m.index);
+    if(text){ var top=stack[stack.length-1]; (top.parts=top.parts||[]).push(text); }
+    last=re.lastIndex;
+    if(m[1]){ if(stack.length>1) stack.pop(); }
+    else { var node={tag:m[2],children:[],parts:[]}; stack[stack.length-1].children.push(node); stack.push(node); }
+  }
+  return root;
+}
+function nodeText(n){ return (n.parts||[]).join("").replace(/^\s+|\s+$/g,""); }
+function isLeaf(n){ return n.children.length===0; }
+function mdSubLine(l,indent){
+  var v=nodeText(l);
+  if(!v) return indent+"- "+mdHumanize(l.tag);
+  if(v.indexOf("\n")>=0){
+    var body=v.split("\n").map(function(x){ return x ? indent+"  "+x : ""; }).join("\n");
+    return indent+"- "+mdHumanize(l.tag)+":\n"+body;
+  }
+  return indent+"- "+mdHumanize(l.tag)+": "+v;
+}
+function mdRecordTop(n){ // top-level record: tag becomes the label, first leaf its value
+  var ls=n.children, lines=["**"+mdHumanize(n.tag)+":** "+nodeText(ls[0])];
+  ls.slice(1).forEach(function(l){ lines.push(mdSubLine(l,"")); });
+  return lines.join("\n");
+}
+function mdRecordItem(c){ // list item: first leaf is the bold lead, rest are sub-bullets
+  var ls=c.children, lines=["- **"+nodeText(ls[0])+"**"];
+  ls.slice(1).forEach(function(l){ lines.push(mdSubLine(l,"  ")); });
+  return lines.join("\n");
+}
+function mdRenderTop(n){
+  if(isLeaf(n)){
+    var v=nodeText(n); if(!v) return "";
+    return v.indexOf("\n")>=0 ? "**"+mdHumanize(n.tag)+":**\n\n"+v : "**"+mdHumanize(n.tag)+":** "+v;
+  }
+  var hasRecordChild=n.children.some(function(c){ return !isLeaf(c); });
+  if(!hasRecordChild) return mdRecordTop(n);
+  var items=n.children.map(function(c){ return isLeaf(c) ? (nodeText(c)?"- "+nodeText(c):"") : mdRecordItem(c); }).filter(Boolean);
+  return "**"+mdHumanize(n.tag)+":**\n"+items.join("\n");
+}
+function xmlBlockToMd(o){
+  if(o.replace(/^\s+/,"").charAt(0)!=="<") return o; // already plain Markdown
+  return xmlToTree(o).children.map(mdRenderTop).filter(Boolean).join("\n\n");
 }
 function brandSlug(){ var Q1=state.answers.Q1||{}; return slug(Q1.brand); }
 function fileName(f){ return brandSlug()+"-"+f.file+".md"; }
@@ -1549,12 +1658,99 @@ function downloadAll(){
   var files=FILES.map(function(f){ return {name:fileName(f), content:compileFile(f)}; });
   downloadBlob(makeZip(files), brandSlug()+"-brand-brain.zip");
 }
+/* ----- Save / load progress (offline JSON round-trip) ----- */
+function saveProgress(){
+  var payload={ _type:"brand-brain", version:1, savedAt:new Date().toISOString(),
+    current:state.current, answers:state.answers };
+  downloadBlob(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),
+    brandSlug()+"-brand-brain.json");
+  toast("Progress saved");
+}
+var pendingLoad=null;
+function loadProgress(file){
+  var reader=new FileReader();
+  reader.onerror=function(){ toast("Could not read that file"); };
+  reader.onload=function(){
+    var d;
+    try{ d=JSON.parse(reader.result); }catch(e){ toast("Not valid JSON"); return; }
+    if(!d || d._type!=="brand-brain" || !d.answers || typeof d.answers!=="object"){
+      toast("Not a Brand Brain progress file"); return;
+    }
+    pendingLoad=d; openLoadModal();
+  };
+  reader.readAsText(file);
+}
+// True when a value holds any real answer (recurses into rows and fields).
+function valHasContent(v){
+  if(v===undefined || v===null) return false;
+  if(typeof v==="string") return v.trim().length>0;
+  if(typeof v==="boolean") return v;
+  if(Array.isArray(v)) return v.some(valHasContent);
+  if(typeof v==="object") return Object.keys(v).some(function(k){ return valHasContent(v[k]); });
+  return !!v;
+}
+// Merge: keep what the user already has, fill only the gaps from the loaded file.
+function mergeValue(curr, inc){
+  if(inc===undefined) return curr;
+  if(curr===undefined) return inc;
+  if(typeof curr==="string" || typeof inc==="string") return valHasContent(curr) ? curr : inc;
+  if(Array.isArray(curr) && Array.isArray(inc)){
+    var out=curr.map(function(el,i){ return i<inc.length ? mergeValue(el, inc[i]) : el; });
+    for(var j=curr.length;j<inc.length;j++) out.push(inc[j]);
+    return out;
+  }
+  if(Array.isArray(curr) || Array.isArray(inc)) return valHasContent(curr) ? curr : inc;
+  if(curr && inc && typeof curr==="object" && typeof inc==="object"){
+    var o={}, keys={};
+    Object.keys(curr).forEach(function(k){ keys[k]=1; });
+    Object.keys(inc).forEach(function(k){ keys[k]=1; });
+    Object.keys(keys).forEach(function(k){ o[k]=mergeValue(curr[k], inc[k]); });
+    return o;
+  }
+  return valHasContent(curr) ? curr : inc;
+}
+function applyLoaded(mode){
+  var d=pendingLoad; if(!d) return;
+  pendingLoad=null; closeLoadModal();
+  if(mode==="merge"){
+    Object.keys(d.answers).forEach(function(id){
+      state.answers[id]=mergeValue(state.answers[id], d.answers[id]);
+    });
+  }else{
+    state.answers=d.answers;
+    if(d.current && (d.current==="__v2" || FILES.some(function(f){return f.id===d.current;}))) state.current=d.current;
+  }
+  save(); renderNav(); renderMain(); updateMasterButton();
+  if(exportOpen) renderExport();
+  toast(mode==="merge" ? "Progress merged" : "Progress loaded");
+}
+function openLoadModal(){
+  document.getElementById("loadScrim").classList.add("open");
+  var m=document.getElementById("loadModal"); m.classList.add("open"); m.setAttribute("aria-hidden","false");
+}
+function closeLoadModal(){
+  document.getElementById("loadScrim").classList.remove("open");
+  var m=document.getElementById("loadModal"); m.classList.remove("open"); m.setAttribute("aria-hidden","true");
+  pendingLoad=null;
+}
 
 /* ============================================================ *
  * Export panel
  * ============================================================ */
 var exportPreviewFile=null;
+function renderFmtToggle(){
+  var x=document.getElementById("fmtXml"), m=document.getElementById("fmtMd");
+  if(!x||!m) return;
+  x.classList.toggle("active", outputMode!=="md");
+  m.classList.toggle("active", outputMode==="md");
+}
+function setOutputMode(mode){
+  outputMode = (mode==="md") ? "md" : "xml";
+  try{ localStorage.setItem("brandBrain.outputMode", outputMode); }catch(e){}
+  renderExport();
+}
 function renderExport(){
+  renderFmtToggle();
   var list=document.getElementById("exportList"); list.innerHTML="";
   if(!exportPreviewFile) exportPreviewFile=FILES[0].id;
   FILES.forEach(function(f){
@@ -1599,8 +1795,11 @@ function toast(msg){
  * ============================================================ */
 function init(){
   load();
+  try{ var om=localStorage.getItem("brandBrain.outputMode"); if(om==="md"||om==="xml") outputMode=om; }catch(e){}
   if(state.current!=="__v2" && !FILES.some(function(f){return f.id===state.current;})) state.current="brand-profile";
   renderNav(); renderMain(); updateMasterButton();
+  document.getElementById("fmtXml").addEventListener("click",function(){ setOutputMode("xml"); });
+  document.getElementById("fmtMd").addEventListener("click",function(){ setOutputMode("md"); });
 
   document.getElementById("openMaster").addEventListener("click",function(){ if(!this.disabled) openMaster(); });
   document.getElementById("openExport").addEventListener("click",openExport);
@@ -1616,12 +1815,20 @@ function init(){
     if(!navigator.clipboard) legacyCopy(txt);
   });
   document.getElementById("downloadZip").addEventListener("click",downloadAll);
+  document.getElementById("saveProgress").addEventListener("click",saveProgress);
+  var loadFile=document.getElementById("loadFile");
+  document.getElementById("loadProgress").addEventListener("click",function(){ loadFile.click(); });
+  loadFile.addEventListener("change",function(){ if(loadFile.files&&loadFile.files[0]) loadProgress(loadFile.files[0]); loadFile.value=""; });
+  document.getElementById("loadReplace").addEventListener("click",function(){ applyLoaded("replace"); });
+  document.getElementById("loadMerge").addEventListener("click",function(){ applyLoaded("merge"); });
+  document.getElementById("loadCancel").addEventListener("click",closeLoadModal);
+  document.getElementById("loadScrim").addEventListener("click",closeLoadModal);
   document.getElementById("clearAll").addEventListener("click",function(){
     if(confirm("Clear all answers? This cannot be undone.")){
       state.answers={}; save(); renderNav(); renderMain(); updateMasterButton(); toast("All answers cleared");
     }
   });
-  document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ closePanel("master"); closePanel("export"); } });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ closePanel("master"); closePanel("export"); closeLoadModal(); } });
 }
 function legacyCopy(txt){
   var ta=document.createElement("textarea"); ta.value=txt; ta.style.position="fixed"; ta.style.opacity="0";
