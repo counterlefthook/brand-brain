@@ -4,11 +4,14 @@
 
 Live and deployed. The app is a single, self-contained, offline `index.html`
 that walks a brand team through a questionnaire and exports a "Brand Brain":
-five Markdown files wrapped in semantic XML tags for LLM/agent readability.
+five Markdown files, either plain Markdown (default) or wrapped in semantic XML
+tags for LLM/agent readability.
 
 - **Production:** https://brand-brain-gold.vercel.app/ (auto-deploys on every push to `main`)
 - **Repo:** `counterlefthook/brand-brain`
-- **Stack:** vanilla HTML/CSS/JS, no build step, no framework, no network calls.
+- **Stack:** vanilla HTML/CSS/JS, no build step, no framework. The only network
+  call is the Vercel Web Analytics script, which is same-origin, deferred, and
+  loads only on the live deploy; the app is fully functional offline.
 
 ## Repo layout
 
@@ -59,10 +62,18 @@ Other behaviour:
 - **Master Context Block:** a live 150-200 word preview built from the core
   answers, with copy-to-clipboard. Unlocks once the core questions are filled.
 - **Persistence:** all answers save to `localStorage` (resumable).
+- **Save / load progress:** sidebar buttons download the full answers as
+  `[slug]-brand-brain.json` and load it back. Loading opens a chooser: replace
+  all answers, fill only empty fields (deep merge that keeps existing answers
+  and fills gaps - sub-fields, repeat rows element-wise, untouched questions
+  wholesale), or cancel. Invalid/non-JSON files are rejected before the chooser
+  opens. Offline and dependency-free.
 - **Per-file owner labels** (Acquisition, Creative Team, etc.) shown in headers.
-- **Export:** each `.md` individually plus a "Download all" `.zip` (via a tiny
-  native store-method zip writer, so there is no third-party dependency and no
-  network request).
+- **Export:** choose **Markdown only** (default, recommended for general brand
+  context) or **XML-tagged** (best for building AI agents). The choice persists
+  in `localStorage` and drives the preview, each `.md`, and the "Download all"
+  `.zip` (a tiny native store-method zip writer, so there is no third-party
+  dependency and no network request).
 
 ## How it is built (for future edits)
 
@@ -85,11 +96,21 @@ Everything lives in the one `<script>` block in `index.html`.
   (description), `Q9` (voice), `Q10` (always/never), `Q13` (terminology), `Q18`
   (audience overview), `Q19` (what they value), `Q32` (messaging rules). Keep
   those ids stable.
-- **Output is semantic XML.** Tabular and multi-field answers compile to nested
-  tags (for example `<product>`, `<colour>`, `<prompt_categories>`); simple
-  text answers use `**Label:** value`. Raw text is kept unescaped for
-  readability. There are no em-dashes anywhere in the app or its output (house
-  style).
+- **Output has two formats, one source.** Each question's `out()` still emits
+  the semantic-XML form (tabular/multi-field answers compile to nested tags such
+  as `<colour>`, `<prompt_categories>`; simple text uses `**Label:** value`;
+  raw text is kept unescaped for readability). A global `outputMode`
+  (`"md"` default, or `"xml"`) selects the export. Markdown mode runs the
+  compiled XML through `xmlBlockToMd()` - a *tolerant* tag scanner (not a strict
+  XML parser, so unescaped `&`/`<` survive) that turns list blocks into bold-led
+  bullets, single records into labelled fields, and text blocks into labelled
+  prose; already-plain `out()` strings (those not starting with `<`) pass
+  through untouched. This means new questions need no converter changes. There
+  are no em-dashes anywhere in the app or its output (house style).
+- **File completion** (`fileComplete`) requires both that all blocking `req`
+  rules are met AND that the file compiles to real content (`fileHasOutput`).
+  The second check matters for files with no required questions (the Keyword and
+  Prompt Map): without it they read as complete while empty or seed-only.
 - **Design** is the Travelopia Design System: Blue `#185274`, Coral `#D04A5B`,
   Teal `#179D98`, Playfair Display + Arial. Fonts are embedded as base64 so the
   file stays fully offline. All CSS is in the single `<style>` block.
@@ -110,19 +131,31 @@ PR. (The Vercel project's stored framework preset is "Vite" from the original
 import; `vercel.json` overrides it, but setting it to "Other" in the dashboard
 would remove the mismatch.)
 
+**Vercel Web Analytics** is enabled. Because this is a single static file (not a
+framework app), it uses the plain-HTML method: a `window.va` stub plus
+`<script defer src="/_vercel/insights/script.js">` in `<head>`. There is no
+`@vercel/analytics` npm package or React component. Data shows in the project's
+Analytics tab; content/ad blockers commonly block `/_vercel/insights`.
+
 ---
+
+## Done since last handoff
+- **Save / load progress (JSON round-trip).** Shipped - download/load a
+  `[slug]-brand-brain.json` with a replace / fill-empty-only / cancel chooser.
+- **Markdown-or-XML export** with a persisted format toggle (Markdown default).
+- **Sidebar pill buttons** for Save / Load / Clear (Clear is a coral danger
+  variant).
+- **Vercel Web Analytics** enabled.
+- **Fix:** files with no required questions (Keyword and Prompt Map) no longer
+  report complete while empty or seed-only.
 
 ## Next steps
 
-### 1. Save for later
-Let users pause and resume beyond a single browser. Two complementary options:
-- **Download / upload a JSON state file.** Add "Save progress" (download the
-  full answers object as `[brand]-brand-brain.json`) and "Load progress" (file
-  picker that restores it). This is offline-friendly, requires no backend, and
-  reuses the existing state shape.
-- **Connected storage (later).** Optionally sync to a shared drive or a small
-  backend so progress follows the user across devices. Heavier; only if the
-  JSON round-trip is not enough.
+### 1. Connected storage (optional, later)
+The single-browser limit is solved by the JSON round-trip above. Only if that is
+not enough: sync progress to a shared drive or a small backend so it follows the
+user across devices. Heavier; needs a backend, which breaks the current
+zero-dependency/offline posture - weigh carefully.
 
 ### 2. Round-trip template (offline review by a non-user)
 Let a user hand the questionnaire to someone who will not use the app, then pull
