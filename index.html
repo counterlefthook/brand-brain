@@ -271,6 +271,14 @@ pre.mono-box{font-family:var(--mono);font-size:12.5px;line-height:1.65;white-spa
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 22px;border-radius:var(--pill);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;z-index:80;opacity:0;transition:opacity var(--dur),transform var(--dur);pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* load-mode chooser */
+.loadmodal{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%);width:min(440px,92vw);background:var(--paper);border-radius:var(--radius);box-shadow:0 26px 70px -30px rgba(0,0,0,.55);z-index:70;padding:26px;opacity:0;pointer-events:none;transition:opacity var(--dur),transform var(--dur)}
+.loadmodal.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
+.loadmodal h3{font-family:var(--serif);font-size:21px;margin:0 0 8px;font-weight:700}
+.loadmodal p{color:var(--muted);font-size:13.5px;line-height:1.55;margin:0 0 22px}
+.loadmodal-actions{display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.loadmodal-actions .linkbtn{align-self:center;margin-top:4px}
+
 @media(max-width:880px){
   .shell{flex-direction:column;gap:24px}
   nav.index{position:static;width:100%}
@@ -657,6 +665,18 @@ Then ask your actual question. That's the entire workflow.</div>
     <pre class="mono-box" id="exportPreview" style="margin-top:8px"></pre>
   </div>
 </aside>
+
+<!-- Load-mode chooser -->
+<div class="scrim" id="loadScrim"></div>
+<div class="loadmodal" id="loadModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="loadModalTitle">
+  <h3 id="loadModalTitle">Load saved progress</h3>
+  <p>This is a saved Brand Brain. How should it be applied to your current answers?</p>
+  <div class="loadmodal-actions">
+    <button class="btn btn-primary" id="loadReplace">Replace all my answers</button>
+    <button class="btn btn-ghost" id="loadMerge">Fill in my empty fields only</button>
+    <button class="linkbtn" id="loadCancel">Cancel</button>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -1560,6 +1580,7 @@ function saveProgress(){
     brandSlug()+"-brand-brain.json");
   toast("Progress saved");
 }
+var pendingLoad=null;
 function loadProgress(file){
   var reader=new FileReader();
   reader.onerror=function(){ toast("Could not read that file"); };
@@ -1569,14 +1590,62 @@ function loadProgress(file){
     if(!d || d._type!=="brand-brain" || !d.answers || typeof d.answers!=="object"){
       toast("Not a Brand Brain progress file"); return;
     }
-    if(!confirm("Load this file? It replaces your current answers.")) return;
-    state.answers=d.answers;
-    if(d.current && (d.current==="__v2" || FILES.some(function(f){return f.id===d.current;}))) state.current=d.current;
-    save(); renderNav(); renderMain(); updateMasterButton();
-    if(exportOpen) renderExport();
-    toast("Progress loaded");
+    pendingLoad=d; openLoadModal();
   };
   reader.readAsText(file);
+}
+// True when a value holds any real answer (recurses into rows and fields).
+function valHasContent(v){
+  if(v===undefined || v===null) return false;
+  if(typeof v==="string") return v.trim().length>0;
+  if(typeof v==="boolean") return v;
+  if(Array.isArray(v)) return v.some(valHasContent);
+  if(typeof v==="object") return Object.keys(v).some(function(k){ return valHasContent(v[k]); });
+  return !!v;
+}
+// Merge: keep what the user already has, fill only the gaps from the loaded file.
+function mergeValue(curr, inc){
+  if(inc===undefined) return curr;
+  if(curr===undefined) return inc;
+  if(typeof curr==="string" || typeof inc==="string") return valHasContent(curr) ? curr : inc;
+  if(Array.isArray(curr) && Array.isArray(inc)){
+    var out=curr.map(function(el,i){ return i<inc.length ? mergeValue(el, inc[i]) : el; });
+    for(var j=curr.length;j<inc.length;j++) out.push(inc[j]);
+    return out;
+  }
+  if(Array.isArray(curr) || Array.isArray(inc)) return valHasContent(curr) ? curr : inc;
+  if(curr && inc && typeof curr==="object" && typeof inc==="object"){
+    var o={}, keys={};
+    Object.keys(curr).forEach(function(k){ keys[k]=1; });
+    Object.keys(inc).forEach(function(k){ keys[k]=1; });
+    Object.keys(keys).forEach(function(k){ o[k]=mergeValue(curr[k], inc[k]); });
+    return o;
+  }
+  return valHasContent(curr) ? curr : inc;
+}
+function applyLoaded(mode){
+  var d=pendingLoad; if(!d) return;
+  pendingLoad=null; closeLoadModal();
+  if(mode==="merge"){
+    Object.keys(d.answers).forEach(function(id){
+      state.answers[id]=mergeValue(state.answers[id], d.answers[id]);
+    });
+  }else{
+    state.answers=d.answers;
+    if(d.current && (d.current==="__v2" || FILES.some(function(f){return f.id===d.current;}))) state.current=d.current;
+  }
+  save(); renderNav(); renderMain(); updateMasterButton();
+  if(exportOpen) renderExport();
+  toast(mode==="merge" ? "Progress merged" : "Progress loaded");
+}
+function openLoadModal(){
+  document.getElementById("loadScrim").classList.add("open");
+  var m=document.getElementById("loadModal"); m.classList.add("open"); m.setAttribute("aria-hidden","false");
+}
+function closeLoadModal(){
+  document.getElementById("loadScrim").classList.remove("open");
+  var m=document.getElementById("loadModal"); m.classList.remove("open"); m.setAttribute("aria-hidden","true");
+  pendingLoad=null;
 }
 
 /* ============================================================ *
@@ -1649,12 +1718,16 @@ function init(){
   var loadFile=document.getElementById("loadFile");
   document.getElementById("loadProgress").addEventListener("click",function(){ loadFile.click(); });
   loadFile.addEventListener("change",function(){ if(loadFile.files&&loadFile.files[0]) loadProgress(loadFile.files[0]); loadFile.value=""; });
+  document.getElementById("loadReplace").addEventListener("click",function(){ applyLoaded("replace"); });
+  document.getElementById("loadMerge").addEventListener("click",function(){ applyLoaded("merge"); });
+  document.getElementById("loadCancel").addEventListener("click",closeLoadModal);
+  document.getElementById("loadScrim").addEventListener("click",closeLoadModal);
   document.getElementById("clearAll").addEventListener("click",function(){
     if(confirm("Clear all answers? This cannot be undone.")){
       state.answers={}; save(); renderNav(); renderMain(); updateMasterButton(); toast("All answers cleared");
     }
   });
-  document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ closePanel("master"); closePanel("export"); } });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ closePanel("master"); closePanel("export"); closeLoadModal(); } });
 }
 function legacyCopy(txt){
   var ta=document.createElement("textarea"); ta.value=txt; ta.style.position="fixed"; ta.style.opacity="0";
