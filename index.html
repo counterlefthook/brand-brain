@@ -668,8 +668,8 @@ Then ask your actual question. That's the entire workflow.</div>
   <div class="panel-body">
     <p class="mcb-note">Each section becomes a Markdown file. Choose a format, then download the files individually or all at once.</p>
     <div class="fmt-toggle" role="group" aria-label="Output format">
-      <button class="fmt-opt" id="fmtXml" data-mode="xml">XML-tagged<span>Best for AI agents to parse</span></button>
-      <button class="fmt-opt" id="fmtMd" data-mode="md">Markdown only<span>Cleanest to read and edit by hand</span></button>
+      <button class="fmt-opt" id="fmtMd" data-mode="md">Markdown only<span>Recommended for general brand context</span></button>
+      <button class="fmt-opt" id="fmtXml" data-mode="xml">XML-tagged<span>Best for building AI agents</span></button>
     </div>
     <div id="exportList"></div>
     <div style="margin-top:8px"><button class="btn btn-accent" id="downloadZip">Download all (.zip)</button></div>
@@ -1138,10 +1138,19 @@ function reqMet(q){
   return true;
 }
 function reqBlocking(q){ return q.req.kind!=="rec" && q.req.kind!=="none"; }
+// A file produces output when at least one question compiles to real content.
+function fileHasOutput(f){
+  return f.sections.some(function(s){
+    return s.questions.some(function(q){ return has(t(q.out(getVal(q)))); });
+  });
+}
 function fileComplete(f){
-  return f.sections.every(function(s){
+  var allMet=f.sections.every(function(s){
     return s.questions.every(function(q){ return !reqBlocking(q) || reqMet(q); });
   });
+  // Files with no blocking requirements (e.g. Keyword Map) must still have
+  // genuine content before they count as complete - not just seeded rows.
+  return allMet && fileHasOutput(f);
 }
 function completeCount(){ return FILES.filter(fileComplete).length; }
 
@@ -1527,7 +1536,7 @@ function renderMaster(){
 /* ============================================================ *
  * Output assembly
  * ============================================================ */
-var outputMode="xml"; // "xml" = semantic XML tags (default), "md" = plain Markdown
+var outputMode="md"; // "md" = plain Markdown (default), "xml" = semantic XML tags
 function compileFile(f){ return outputMode==="md" ? compileFileMd(f) : compileFileXml(f); }
 function compileFileXml(f){
   var out="# "+f.title+"\n\n<"+f.wrapper+">\n";
