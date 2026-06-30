@@ -125,7 +125,7 @@ ul.files{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;g
 .file-item.locked{opacity:.55;cursor:not-allowed}
 .file-item.locked:hover{background:none;transform:none}
 .lock-badge{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--muted);border:1px solid var(--line-strong);border-radius:5px;padding:2px 6px}
-.index-foot{margin-top:24px;padding-top:16px;border-top:1px solid var(--line)}
+.index-foot{margin-top:24px;padding-top:16px;border-top:1px solid var(--line);display:flex;flex-direction:column;align-items:flex-start;gap:7px}
 .linkbtn{background:none;border:none;color:var(--muted);font-size:12.5px;cursor:pointer;padding:4px 0;text-decoration:underline;text-underline-offset:2px}
 .linkbtn:hover{color:var(--coral-600)}
 
@@ -432,7 +432,10 @@ pre.mono-box{font-family:var(--mono);font-size:12.5px;line-height:1.65;white-spa
       <div class="index-eyebrow">The five files</div>
       <ul class="files" id="fileNav"></ul>
       <div class="index-foot">
+        <button class="linkbtn" id="saveProgress">Save progress (.json)</button>
+        <button class="linkbtn" id="loadProgress">Load progress</button>
         <button class="linkbtn" id="clearAll">Clear all answers</button>
+        <input type="file" id="loadFile" accept="application/json,.json" hidden>
       </div>
     </nav>
 
@@ -1549,6 +1552,32 @@ function downloadAll(){
   var files=FILES.map(function(f){ return {name:fileName(f), content:compileFile(f)}; });
   downloadBlob(makeZip(files), brandSlug()+"-brand-brain.zip");
 }
+/* ----- Save / load progress (offline JSON round-trip) ----- */
+function saveProgress(){
+  var payload={ _type:"brand-brain", version:1, savedAt:new Date().toISOString(),
+    current:state.current, answers:state.answers };
+  downloadBlob(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),
+    brandSlug()+"-brand-brain.json");
+  toast("Progress saved");
+}
+function loadProgress(file){
+  var reader=new FileReader();
+  reader.onerror=function(){ toast("Could not read that file"); };
+  reader.onload=function(){
+    var d;
+    try{ d=JSON.parse(reader.result); }catch(e){ toast("Not valid JSON"); return; }
+    if(!d || d._type!=="brand-brain" || !d.answers || typeof d.answers!=="object"){
+      toast("Not a Brand Brain progress file"); return;
+    }
+    if(!confirm("Load this file? It replaces your current answers.")) return;
+    state.answers=d.answers;
+    if(d.current && (d.current==="__v2" || FILES.some(function(f){return f.id===d.current;}))) state.current=d.current;
+    save(); renderNav(); renderMain(); updateMasterButton();
+    if(exportOpen) renderExport();
+    toast("Progress loaded");
+  };
+  reader.readAsText(file);
+}
 
 /* ============================================================ *
  * Export panel
@@ -1616,6 +1645,10 @@ function init(){
     if(!navigator.clipboard) legacyCopy(txt);
   });
   document.getElementById("downloadZip").addEventListener("click",downloadAll);
+  document.getElementById("saveProgress").addEventListener("click",saveProgress);
+  var loadFile=document.getElementById("loadFile");
+  document.getElementById("loadProgress").addEventListener("click",function(){ loadFile.click(); });
+  loadFile.addEventListener("change",function(){ if(loadFile.files&&loadFile.files[0]) loadProgress(loadFile.files[0]); loadFile.value=""; });
   document.getElementById("clearAll").addEventListener("click",function(){
     if(confirm("Clear all answers? This cannot be undone.")){
       state.answers={}; save(); renderNav(); renderMain(); updateMasterButton(); toast("All answers cleared");
