@@ -1,4 +1,4 @@
-# Brand Brain Builder, handoff
+# Brand Context Builder, handoff
 
 ## Status
 
@@ -6,6 +6,12 @@ Live and deployed. The app is a single, self-contained, offline `index.html`
 that walks a brand team through a questionnaire and exports a "Brand Brain":
 five Markdown files, either plain Markdown (default) or wrapped in semantic XML
 tags for LLM/agent readability.
+
+Note on naming: the **tool** is now called "Brand Context Builder" (users found
+"Brain" confusing). The exported **artifact** is still called a "Brand Brain"
+throughout the app and its output, and the internal storage keys / save-file
+format (`brandBrain.*`, `_type:"brand-brain"`) are unchanged for backward
+compatibility. Only the tool's title, header, and code comments were renamed.
 
 - **Production:** https://brand-brain-gold.vercel.app/ (auto-deploys on every push to `main`)
 - **Repo:** `counterlefthook/brand-brain`
@@ -20,6 +26,7 @@ tags for LLM/agent readability.
 | `index.html` | The entire app (config, engine, styles, embedded fonts). This is the deliverable. |
 | `vercel.json` | Static no-build deploy config (`framework: null`, serves the repo root). |
 | `brand-brain-questions.md` | The original 37-question spec. Historical reference; the app has since evolved past it. |
+| `archived-questions.md` | Questions removed from the Builder, kept verbatim (config + where they lived) so any can be restored. |
 | `handoff.md` | This file. |
 | `.gitignore` | Standard ignores. |
 
@@ -140,6 +147,25 @@ Analytics tab; content/ad blockers commonly block `/_vercel/insights`.
 ---
 
 ## Done since last handoff
+- **Shorter questionnaire (45 to 38 questions).** Removed 7 questions and
+  archived them verbatim in `archived-questions.md` (restorable). Removed:
+  supporting theme/secondary line, "sum up your difference in a single line,"
+  "how does personality show up in practice," the two voice examples
+  (gold-standard and wrong-sounding copy), "what language does your audience
+  use," and "strategic GEO goal."
+- **Reworded several questions for clarity.**
+  - Brand purpose simplified from a two-field repeat to one plain-language
+    textarea, and reframed so an LLM does not confuse it with Reasons to Believe.
+  - "Describe your brand as a person / persona trait" reworded to "What traits
+    define your brand?" (output tag renamed `brand_persona` to
+    `brand_personality`) so it no longer collides with audience terminology.
+  - "Brand tone attributes" reworded to "What is your brand tone?" with help
+    that distinguishes tone (how it sounds) from character traits (who it is).
+  - "We are NOT" reworded to "Explain what your brand is not," plus examples.
+  - Added worked examples to messaging pillars, audience segments, and the
+    "not for" audience question.
+- **Tool renamed to "Brand Context Builder"** (title, header, comments only;
+  artifact and storage format unchanged - see Status note above).
 - **Save / load progress (JSON round-trip).** Shipped - download/load a
   `[slug]-brand-brain.json` with a replace / fill-empty-only / cancel chooser.
 - **Markdown-or-XML export** with a persisted format toggle (Markdown default).

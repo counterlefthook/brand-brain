@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Brand Brain Builder</title>
+<title>Brand Context Builder</title>
 <!--
-  Brand Brain Builder - a single, self-contained, offline HTML app.
+  Brand Context Builder - a single, self-contained, offline HTML app.
   No build step, no framework, no network requests. Open in any browser.
   Walks through a brand questionnaire and exports a "Brand Brain":
   five markdown files with semantic XML tags for LLM readability.
@@ -22,7 +22,7 @@
 -->
 <style>
 /* ============================================================ *
- * Travelopia Design System - applied to Brand Brain Builder
+ * Travelopia Design System - applied to Brand Context Builder
  * Source: Travelopia Design System readme (Brand Guidelines 2021).
  * Colour: Blue #185274 dominant · Coral #D04A5B accent · Teal
  * #179D98 interactivity · ink #14222B. Type: Playfair Display
@@ -424,7 +424,7 @@ pre.mono-box{font-family:var(--mono);font-size:12.5px;line-height:1.65;white-spa
   <header class="top">
     <div class="brand-lockup">
       <span class="brand-mark">T</span>
-      <span class="brand-title">Brand Brain</span>
+      <span class="brand-title">Brand Context Builder</span>
       <span class="brand-sub">Build a portable, AI-ready brand context</span>
     </div>
     <nav class="view-tabs" aria-label="View">
@@ -773,16 +773,10 @@ var FILES = [
           help:"Your definitive outward-facing line, with guidance on where it should and should not be used.",
           req:R.rec(),
           out:function(v){ var e=(v&&v[0])||{}; if(!has(e.line)) return ""; var s="<core_brand_line>\n  <line>"+t(e.line)+"</line>"; if(has(e.use)) s+="\n  <how_to_use>"+t(e.use)+"</how_to_use>"; if(has(e.avoid)) s+="\n  <how_not_to_use>"+t(e.avoid)+"</how_not_to_use>"; return s+"\n</core_brand_line>"; } },
-        { id:"Q44", n:"Q44", label:"Do you have a supporting theme or secondary line?", type:"repeat", max:1, single:true,
-          fields:[{key:"theme",label:"Supporting theme"},{key:"use",label:"How to use it",ta:true},{key:"avoid",label:"How not to use it",ta:true}],
-          help:"An emotive theme that supports the core brand line, with guidance on its use.",
+        { id:"Q45", n:"Q45", label:"What is your brand's purpose? Why does it exist, beyond making money?", type:"textarea", size:"md",
+          help:"The reason the brand exists, in one plain-language statement. This is your mission, not your proof: keep it distinct from Reasons to Believe, which lists the evidence that backs your promise.",
           req:R.rec(),
-          out:function(v){ var e=(v&&v[0])||{}; if(!has(e.theme)) return ""; var s="<supporting_theme>\n  <theme>"+t(e.theme)+"</theme>"; if(has(e.use)) s+="\n  <how_to_use>"+t(e.use)+"</how_to_use>"; if(has(e.avoid)) s+="\n  <how_not_to_use>"+t(e.avoid)+"</how_not_to_use>"; return s+"\n</supporting_theme>"; } },
-        { id:"Q45", n:"Q45", label:"Why does your brand exist, beyond commercial goals?", type:"repeat", max:1, single:true,
-          fields:[{key:"statement",label:"Brand purpose",ta:true},{key:"plain",label:"Purpose in plain language",ta:true}],
-          help:"The reason the brand exists, and the same idea expressed in plain language.",
-          req:R.rec(),
-          out:function(v){ var e=(v&&v[0])||{}; if(!has(e.statement)&&!has(e.plain)) return ""; var s="<brand_purpose>"; if(has(e.statement)) s+="\n  <statement>"+t(e.statement)+"</statement>"; if(has(e.plain)) s+="\n  <plain_language>"+t(e.plain)+"</plain_language>"; return s+"\n</brand_purpose>"; } },
+          out:function(v){ return has(v) ? "**Brand purpose:** "+t(v) : ""; } },
         { id:"Q46", n:"Q46", label:"What is your brand promise to customers?", type:"textarea", size:"md",
           help:"The core promise the brand makes and keeps in every interaction.",
           req:R.rec(),
@@ -792,11 +786,7 @@ var FILES = [
         { id:"Q5", n:"Q5", label:"What makes your brand different? What can customers get from you that they genuinely cannot get elsewhere?", type:"textarea", size:"md",
           help:"Be specific. State what is genuinely distinct, not generic claims such as \"better service.\"",
           req:R.yes(),
-          out:function(v){ return "**Brand difference:** "+t(v); } },
-        { id:"Q51", n:"Q51", label:"Sum up your difference in a single line.", type:"text", ph:"e.g. No one goes further to bring you closer.",
-          help:"A short, memorable statement that captures what sets the brand apart.",
-          req:R.rec(),
-          out:function(v){ return has(v) ? "**Core difference statement:** "+t(v) : ""; } }
+          out:function(v){ return "**Brand difference:** "+t(v); } }
       ]},
       { name:"Values and Personality", tag:"values_and_personality", questions:[
         { id:"Q47", n:"Q47", label:"What are your brand values?", type:"repeat", max:8,
@@ -804,27 +794,23 @@ var FILES = [
           help:"The core values that guide the brand, with how each shows up in practice.",
           req:R.rec(),
           out:function(v){ var es=filled(v,"value"); if(!es.length) return ""; return "<brand_values>\n"+es.map(function(e){ var s="  <value>\n    <name>"+t(e.value)+"</name>"; if(has(e.means)) s+="\n    <in_practice>"+t(e.means)+"</in_practice>"; return s+"\n  </value>"; }).join("\n")+"\n</brand_values>"; } },
-        { id:"Q48", n:"Q48", label:"Describe your brand as a person. What are its defining personality traits?", type:"repeat", max:6,
-          fields:[{key:"trait",label:"Persona trait",ph:"e.g. Cultured and knowledgeable"},{key:"desc",label:"Description",opt:true}],
-          help:"A few traits that capture how the brand thinks and behaves.",
+        { id:"Q48", n:"Q48", label:"What traits define your brand? Give a few words that describe its character.", type:"repeat", max:6,
+          fields:[{key:"trait",label:"Defining trait",ph:"e.g. Cultured and knowledgeable"},{key:"desc",label:"What it means",opt:true}],
+          help:"A few character traits that describe how the brand thinks and carries itself. These describe the brand itself, not your audience. Example: cultured, knowledgeable, quietly confident.",
           req:R.rec(),
-          out:function(v){ var es=filled(v,"trait"); if(!es.length) return ""; return "<brand_persona>\n"+es.map(function(e){ var s="  <trait>\n    <name>"+t(e.trait)+"</name>"; if(has(e.desc)) s+="\n    <description>"+t(e.desc)+"</description>"; return s+"\n  </trait>"; }).join("\n")+"\n</brand_persona>"; } },
-        { id:"Q49", n:"Q49", label:"How does that personality show up in practice?", type:"textarea", size:"md",
-          help:"How the persona translates into tone, behaviour, and content decisions.",
-          req:R.rec(),
-          out:function(v){ return has(v) ? "**Personality in practice:** "+t(v) : ""; } }
+          out:function(v){ var es=filled(v,"trait"); if(!es.length) return ""; return "<brand_personality>\n"+es.map(function(e){ var s="  <trait>\n    <name>"+t(e.trait)+"</name>"; if(has(e.desc)) s+="\n    <description>"+t(e.desc)+"</description>"; return s+"\n  </trait>"; }).join("\n")+"\n</brand_personality>"; } }
       ]},
       { name:"Messaging Pillars", tag:"messaging_pillars", questions:[
         { id:"Q50", n:"Q50", label:"What are your core messaging pillars?", type:"repeat", max:6,
-          fields:[{key:"pillar",label:"Pillar"},{key:"focus",label:"Focus",opt:true}],
-          help:"The recurring themes your messaging is built on. Give each a name and its focus.",
+          fields:[{key:"pillar",label:"Pillar",ph:"e.g. Depth over breadth"},{key:"focus",label:"Focus",opt:true,ph:"e.g. We go deeper than the itinerary, not to more places"}],
+          help:"The three to five recurring themes every piece of messaging comes back to. Give each a short name and what it covers. Example pillars: \"Depth over breadth\" (we go deeper, not wider), \"Expert-led\" (specialist guides, not generalists), \"Real access\" (places and people others cannot reach).",
           req:R.rec(),
           out:function(v){ var es=filled(v,"pillar"); if(!es.length) return ""; return es.map(function(e){ var s="<pillar>\n  <name>"+t(e.pillar)+"</name>"; if(has(e.focus)) s+="\n  <focus>"+t(e.focus)+"</focus>"; return s+"\n</pillar>"; }).join("\n"); } }
       ]},
       { name:"What We Are Not", tag:"what_we_are_not", questions:[
-        { id:"Q8", n:"Q8", label:"Complete the sentence: \"We are NOT…\" Add up to five.", type:"repeat", max:5,
-          fields:[{key:"statement",label:"We are not…"},{key:"reason",label:"Why this matters to state",opt:true}],
-          help:"Categories, comparisons, or misperceptions to rule out. Example: \"We are not a budget option.\"",
+        { id:"Q8", n:"Q8", label:"Explain what your brand is not. Complete the sentence: \"We are NOT…\"", type:"repeat", max:5,
+          fields:[{key:"statement",label:"We are not…",ph:"e.g. a budget option"},{key:"reason",label:"Why this matters to state",opt:true}],
+          help:"Categories, comparisons, or misperceptions to rule out, so AI never drifts into them. Add up to five. Examples: \"We are not a budget option.\" \"We are not a package-holiday operator.\" \"We are not a luxury brand.\"",
           req:R.min(2,"statement"),
           out:function(v){ var b=filled(v,"statement").map(function(e){return bulletPair(e.statement,e.reason);}); return b.length ? "**We are NOT:**\n"+b.join("\n") : ""; } }
       ]}
@@ -850,20 +836,11 @@ var FILES = [
             if(a.length) s+="**Always sounds:**\n"+a.map(function(x){return "- "+t(x);}).join("\n");
             if(n.length) s+=(s?"\n\n":"")+"**Never sounds:**\n"+n.map(function(x){return "- "+t(x);}).join("\n");
             return s; } },
-        { id:"Q56", n:"Q56", label:"What are your brand's tone attributes?", type:"repeat", max:6,
+        { id:"Q56", n:"Q56", label:"What is your brand tone? List the tone attributes it uses.", type:"repeat", max:6,
           fields:[{key:"attribute",label:"Tone attribute",ph:"e.g. Knowledgeable"},{key:"desc",label:"What it means",opt:true}],
-          help:"Name the defining tone attributes and what each means in practice. Example: Approachable, Knowledgeable, Personal.",
+          help:"Tone is how the brand sounds when it speaks, which is different from the character traits that define who it is. Name the defining tone attributes and what each means in practice. Example: Approachable, Knowledgeable, Personal.",
           req:R.rec(),
-          out:function(v){ var es=filled(v,"attribute"); if(!es.length) return ""; return "<tone_attributes>\n"+es.map(function(e){ var s="  <attribute>\n    <name>"+t(e.attribute)+"</name>"; if(has(e.desc)) s+="\n    <description>"+t(e.desc)+"</description>"; return s+"\n  </attribute>"; }).join("\n")+"\n</tone_attributes>"; } },
-        { id:"Q11", n:"Q11", label:"Give us an example of copy written in your brand voice that you consider a gold standard.", type:"textarea", size:"lg",
-          help:"Paste copy you consider on-brand, from your website, a past campaign, or written now. The AI uses it as a target to match.",
-          req:R.rec(),
-          out:function(v){ return has(v) ? "<voice_example_good>\n"+t(v)+"\n</voice_example_good>" : ""; } },
-        { id:"Q12", n:"Q12", label:"Give us an example of copy that sounds wrong for your brand, and explain briefly why.", type:"repeat", max:1, single:true,
-          fields:[{key:"example",label:"Example of wrong-sounding copy",ta:true},{key:"why",label:"Why it's wrong"}],
-          help:"Provide a concrete off-brand example and the reason it is wrong. This defines what the AI should avoid.",
-          req:R.rec(),
-          out:function(v){ var e=(v&&v[0])||{}; return has(e.example) ? "<voice_example_bad>\n"+t(e.example)+"\n\nWhy this is wrong: "+t(e.why)+"\n</voice_example_bad>" : ""; } }
+          out:function(v){ var es=filled(v,"attribute"); if(!es.length) return ""; return "<tone_attributes>\n"+es.map(function(e){ var s="  <attribute>\n    <name>"+t(e.attribute)+"</name>"; if(has(e.desc)) s+="\n    <description>"+t(e.desc)+"</description>"; return s+"\n  </attribute>"; }).join("\n")+"\n</tone_attributes>"; } }
       ]},
       { name:"Writing Principles", tag:"writing_principles", questions:[
         { id:"Q57", n:"Q57", label:"What are your core writing principles?", type:"repeat", max:10,
@@ -950,19 +927,15 @@ var FILES = [
           help:"The practical hesitations to address directly in content: price, trust, complexity, time, and similar.",
           req:R.min(2,"concern"),
           out:function(v){ var b=filled(v,"concern").map(function(e){return "- "+t(e.concern);}); return b.length ? "**Practical concerns:**\n"+b.join("\n") : ""; } },
-        { id:"Q23", n:"Q23", label:"What language does your audience use when they talk about this?", type:"textarea", size:"md",
-          help:"The exact words they use in searches, reviews, and conversations, not internal terminology.",
-          req:R.rec(),
-          out:function(v){ return has(v) ? "**Language they use:** "+t(v) : ""; } },
         { id:"Q25", n:"Q25", label:"What is your audience not looking for, and who is this not for?", type:"textarea", size:"md",
-          help:"What to filter out: the wrong audience, and the things this audience does not want.",
+          help:"What to filter out: the wrong audience, and the things this audience does not want. Example: \"Not for first-time travellers who want a guided coach tour or a fly-and-flop beach holiday. They are not looking for luxury, hand-holding, or a fixed day-by-day script.\"",
           req:R.rec(),
           out:function(v){ return has(v) ? "**Not looking for / not for:** "+t(v) : ""; } }
       ]},
       { name:"Audience Segments", tag:"audience_segments", questions:[
         { id:"Q24", n:"Q24", label:"Are there distinct segments that need different treatment? Describe up to four.", type:"repeat", max:4,
-          fields:[{key:"name",label:"Segment name"},{key:"who",label:"Who they are"},{key:"need",label:"What they need from content"}],
-          help:"Add a segment only when its content or tone would genuinely differ, for example prospective vs returning, trade vs direct, or by market.",
+          fields:[{key:"name",label:"Segment name",ph:"e.g. First-time adventurers"},{key:"who",label:"Who they are",ph:"e.g. New to active travel, cautious, research-heavy"},{key:"need",label:"What they need from content",ph:"e.g. Reassurance on fitness and safety, clear expectations"}],
+          help:"Add a segment only when its content or tone would genuinely differ, for example prospective vs returning, trade vs direct, or by market. Example: \"First-time adventurers\" (new to active travel; need reassurance on fitness and safety) versus \"Seasoned explorers\" (done the highlights; want depth, access, and a real challenge).",
           req:R.rec(),
           out:function(v){ var es=filled(v,"name"); if(!es.length) return ""; return es.map(function(e){ var s="<segment>\n  <name>"+t(e.name)+"</name>"; if(has(e.who)) s+="\n  <who>"+t(e.who)+"</who>"; if(has(e.need)) s+="\n  <needs_from_content>"+t(e.need)+"</needs_from_content>"; return s+"\n</segment>"; }).join("\n"); } }
       ]}
@@ -974,10 +947,6 @@ var FILES = [
     desc:"The prompts, questions, and topics the brand needs to own in AI-assisted search (GEO).",
     sections:[
       { name:"Prompt Strategy", tag:"prompt_strategy", questions:[
-        { id:"Q53", n:"Q53", label:"What is your strategic GEO goal?", type:"textarea", size:"md",
-          help:"What you want to be surfaced and recommended for when customers use AI search to research a decision like this.",
-          req:R.rec(),
-          out:function(v){ return has(v) ? "**Strategic GEO goal:** "+t(v) : ""; } },
         { id:"Q54", n:"Q54", label:"What prompts do customers ask in each category? Fill in the ones relevant to you.", type:"repeat", max:10,
           seed:[{category:"Comparison and competitor evaluation"},{category:"Pricing, value, and inclusions"},{category:"Expectation setting and fit"},{category:"Logistics and planning"},{category:"Trust, safety, and support"},{category:"Destination and discovery"}],
           fields:[{key:"category",label:"Prompt category"},{key:"prompts",label:"Example prompts and questions customers ask",ta:true}],
