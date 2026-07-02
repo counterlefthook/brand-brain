@@ -24,6 +24,7 @@ compatibility. Only the tool's title, header, and code comments were renamed.
 | File | What it is |
 |---|---|
 | `index.html` | The entire app (config, engine, styles, embedded fonts). This is the deliverable. |
+| `README.md` | Short project overview and pointer into this handoff. |
 | `vercel.json` | Static no-build deploy config (`framework: null`, serves the repo root). |
 | `brand-brain-questions.md` | The original 37-question spec. Historical reference; the app has since evolved past it. |
 | `archived-questions.md` | Questions removed from the Builder, kept verbatim (config + where they lived) so any can be restored. |
@@ -37,23 +38,22 @@ now a single file.
 
 Three top-level tabs in the header:
 
-1. **Builder** (the core). Five files, each a section of grouped questions:
+1. **Builder** (the core). Five files, each a section of grouped questions.
+   38 questions total (down from 45; see `archived-questions.md` for what was
+   removed and how to restore it):
    - **Brand Profile** — Company Overview (name + website, brand description),
-     Brand Platform (core brand line, supporting theme, brand purpose, brand
-     promise), Brand Difference (+ one-line difference statement), Values and
-     Personality (values, persona, personality in practice), Messaging Pillars,
-     What We Are Not.
-   - **Style Guide** — Brand Voice (voice in words, always/never sounds, tone
-     attributes, gold-standard example, wrong example), Writing Principles
-     (principles + how to write about key topics), Reasons to Believe,
-     Terminology (always use / avoid), Visual Identity (typography, colour
-     palette, imagery, logo usage).
+     Brand Platform (core brand line, brand purpose, brand promise), Brand
+     Difference, Values and Personality (values, defining brand traits),
+     Messaging Pillars, What We Are Not.
+   - **Style Guide** — Brand Voice (voice in words, always/never sounds, brand
+     tone), Writing Principles (principles + how to write about key topics),
+     Reasons to Believe, Terminology (always use / avoid), Visual Identity
+     (typography, colour palette, imagery, logo usage).
    - **Audience** — Core Audience (overview, mindset, what they value most,
-     emotional drivers, practical concerns, language they use, not for) and
-     Audience Segments.
-   - **Keyword and Prompt Map** — Prompt Strategy (strategic GEO goal, primary
-     prompt categories pre-seeded with the 6 standard categories) and
-     Exclusions and Markets (topics to avoid, geographic differences).
+     emotional drivers, practical concerns, not for) and Audience Segments.
+   - **Keyword and Prompt Map** — Prompt Strategy (primary prompt categories
+     pre-seeded with the 6 standard categories) and Exclusions and Markets
+     (topics to avoid, geographic differences).
    - **Never Do** — messaging rules (each requires a wrong and a right
      example), positioning restrictions, claims restrictions, content
      restrictions, audience-targeting restrictions, AI operating instructions
@@ -179,6 +179,8 @@ Analytics tab; content/ad blockers commonly block `/_vercel/insights`.
 ---
 
 ## Done since last handoff
+_All of the below shipped to `main` via PR #18 and is live in production._
+
 - **Round-trip review template (.docx).** Two new sidebar buttons: "Review
   template (.docx)" downloads a fillable Word document with every question
   inline (help text, seeded defaults, and blank answer lines); "Import filled
@@ -217,27 +219,27 @@ Analytics tab; content/ad blockers commonly block `/_vercel/insights`.
 
 ## Next steps
 
-### 1. Connected storage (optional, later)
-The single-browser limit is solved by the JSON round-trip above. Only if that is
-not enough: sync progress to a shared drive or a small backend so it follows the
-user across devices. Heavier; needs a backend, which breaks the current
-zero-dependency/offline posture - weigh carefully.
+### 1. Validate the .docx round-trip in real editors (do this first, quick)
+The package is validated as well-formed and round-trips in an automated harness,
+but it has not been opened in a live copy of **Word or Google Docs**. Download
+the template, fill it, resave from each editor, and re-import. Confirm the fill
+experience reads well and that a resave from each still imports cleanly. This is
+the one open verification on shipped code, so it leads the list.
 
-### 2. Round-trip template (offline review by a non-user) - SHIPPED (.docx)
-Done as a Word `.docx` round-trip (see "Done since last handoff" and "The .docx
-round-trip"). The `.xlsx` alternative considered here is no longer needed.
-Possible follow-ups if wanted:
-- **Verify in real Word/Google Docs.** The package is validated as well-formed
-  and round-trips in an automated harness, but has not been opened in a live
-  copy of Word or Google Docs. Confirm the fill experience and that a resave
-  from each still imports cleanly.
+### 2. .docx polish (optional, only if reviewers ask)
 - **Reviewer-friendliness.** The `[[…]]` markers are small and grey but visible;
   if reviewers find them distracting, consider hiding them as Word bookmarks or
-  `vanish` (hidden-text) runs instead. Cap on repeat rows comes from
+  `vanish` (hidden-text) runs instead. The cap on repeat rows comes from
   `tplRows(q)`; raise it if reviewers routinely need more entries.
 - **Import summary.** The load chooser reuses the JSON flow ("This is a saved
   Brand Brain"). Could add a docx-specific summary of how many answers were
-  detected before applying.
+  detected before applying, and word the modal for the docx case.
+
+### 3. Connected storage (optional, later)
+The single-browser limit is solved by the JSON and `.docx` round-trips above.
+Only if that is not enough: sync progress to a shared drive or a small backend
+so it follows the user across devices. Heavier; needs a backend, which breaks
+the current zero-dependency/offline posture - weigh carefully.
 
 ### Also parked (from the Exodus template review)
 - **Strategic Decisions log** in Never Do (decision, reason, date). This is also
